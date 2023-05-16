@@ -6,3 +6,9 @@ declare global {
     api: unknown
   }
 }
+
+declare module 'pixi.js' {
+  interface IRenderer {
+    framebuffer: any
+  }
+}
