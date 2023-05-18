@@ -1,5 +1,5 @@
-import red from '@resources/backgroundTextures/red.png'
-import blue from '@resources/backgroundTextures/blue.png'
+import red from '@resources/backgroundTextures/red.webp'
+import blue from '@resources/backgroundTextures/blue.webp'
 
 export const DEFAULT_FILLS = [
   {

@@ -1,7 +1,16 @@
 import { Container, Sprite, useApp } from '@pixi/react'
 import { useEffect, useRef, useState } from 'react'
 import { getSplatterCircles } from '@renderer/utils/circles'
-import { Texture, Rectangle, Filter, RenderTexture, MSAA_QUALITY, Graphics } from 'pixi.js'
+import {
+  Texture,
+  Rectangle,
+  Filter,
+  RenderTexture,
+  MSAA_QUALITY,
+  Graphics,
+  Point,
+  BlurFilter
+} from 'pixi.js'
 import { useCircle } from '@renderer/hooks/useCircle'
 import { UndoCommand } from '@renderer/utils/undo'
 import { MapState } from '@renderer/types/state'
@@ -34,9 +43,9 @@ export function TerrainBrush({
   setMapState,
   activeFill
 }: TerrainBrushProps) {
-  const size = 10
-  const splatterRadius = 1
-  const splatterAmount = 1
+  const size = 25
+  const splatterRadius = 100
+  const splatterAmount = 15
   const [circles, setCircles] = useState<Array<Array<number>>>([])
 
   // Our render texture isn't created until the component is mounted, so we don't render our unsaved
@@ -94,6 +103,7 @@ export function TerrainBrush({
   }, [app])
 
   // Saves the combined circles out to a texture for performance
+  // TODO: Proper multiple texture support
   const saveTexture = async () => {
     if (circles.length === 0) return
 
@@ -151,7 +161,7 @@ export function TerrainBrush({
 
   // Periodically save out the texture while dragging.
   // Currently causes flickering, but could be implemented as a performance improvement in the future
-  const limit = 50
+  const limit = 25
   useEffect(() => {
     if (circles.length < limit) return
     saveTexture()
@@ -162,8 +172,8 @@ export function TerrainBrush({
   const containerRef = useRef(null)
   const inverseContainerRef = useRef(null)
 
-  // A full screen sprite for each fill we're drawing on
-
+  const [lastCircleSpot, setLastCircleSpot] = useState(null)
+  const paintInterval = 5
   return (
     <>
       <Sprite
@@ -173,10 +183,50 @@ export function TerrainBrush({
         width={width}
         height={height}
         texture={Texture.EMPTY}
+        // TODO: Move to storing coordinates and rendering every X pixels rather than on every
+        // pointermove event
         pointermove={(e) => {
           if (e.buttons !== 1) return
 
-          // Mouse is down, add our circles
+          let lastX = lastCircleSpot.x
+          let lastY = lastCircleSpot.y
+          let distance = Math.sqrt(
+            Math.pow(e.global.x - lastCircleSpot.x, 2) + Math.pow(e.global.y - lastCircleSpot.y, 2)
+          )
+
+          const _c = []
+          while (distance && distance > paintInterval) {
+            distance -= paintInterval
+            // Get X and Y coordinates along the line
+            const v = new Point(e.global.x - lastCircleSpot.x, e.global.y - lastCircleSpot.y)
+            const magnitude = Math.sqrt(Math.pow(v.x, 2) + Math.pow(v.y, 2))
+            const normalized = new Point(v.x / magnitude, v.y / magnitude)
+            const x = lastX + normalized.x * paintInterval
+            const y = lastY + normalized.y * paintInterval
+
+            const newCircles = getSplatterCircles({
+              x,
+              y,
+              splatterRadius,
+              splatterAmount,
+              size
+            })
+
+            _c.push(...newCircles)
+            console.log(_c.length)
+            lastX = x
+            lastY = y
+          }
+
+          if (_c.length) {
+            setCircles([...circles, ..._c])
+          }
+
+          if (lastY !== lastCircleSpot.y || lastX !== lastCircleSpot.x) {
+            setLastCircleSpot({ x: lastX, y: lastY })
+          }
+        }}
+        pointerdown={(e) => {
           const newCircles = getSplatterCircles({
             x: e.global.x,
             y: e.global.y,
@@ -186,10 +236,10 @@ export function TerrainBrush({
           })
 
           setCircles([...circles, ...newCircles])
-        }}
-        pointerdown={() => {
-          const tex = saveTexture()
+          setLastCircleSpot({ ...e.global })
+
           // setPrevTex(tex)
+          const tex = saveTexture()
         }}
         pointerup={() => {
           const tex = saveTexture()
@@ -197,7 +247,7 @@ export function TerrainBrush({
         }}
         zIndex={-9999}
       />
-      <Container ref={inverseContainerRef}>
+      <Container ref={inverseContainerRef} filters={[new BlurFilter()]}>
         {mounted &&
           circles.map(([x, y, size], i) => (
             <Sprite
@@ -206,13 +256,13 @@ export function TerrainBrush({
               scale={size / 10}
               key={i}
               tint="black"
-              alpha={0.5}
+              alpha={0.3}
               texture={circleTexture}
               zIndex={STRATAS.TOOLS}
             />
           ))}
       </Container>
-      <Container ref={containerRef}>
+      <Container ref={containerRef} filters={[new BlurFilter()]}>
         {mounted &&
           circles.map(([x, y, size], i) => (
             <Sprite
@@ -221,7 +271,7 @@ export function TerrainBrush({
               scale={size / 10}
               key={i}
               tint="white"
-              alpha={0.5}
+              alpha={0.3}
               texture={circleTexture}
               zIndex={STRATAS.TOOLS}
             />
