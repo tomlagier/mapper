@@ -9,6 +9,6 @@ declare global {
 
 declare module 'pixi.js' {
   interface IRenderer {
-    framebuffer: any
+    framebuffer?: any
   }
 }

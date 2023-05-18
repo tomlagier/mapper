@@ -1,17 +1,23 @@
-import Versions from './components/Versions'
-import icons from './assets/icons.svg'
 import { PixiCanvas } from './components/PixiCanvas'
-import { AppShell, Header, MantineProvider, NavLink, Navbar, createStyles } from '@mantine/core'
-import { Manatee } from './components/ManateeComponent'
-import { useEffect, useRef, useState } from 'react'
-// import { Test } from './components/Test'
-import { Aiming, BarberBrush } from '@icon-park/react'
-import { useTick } from '@pixi/react'
+import { AppShell, Button, Header, MantineProvider, NavLink, Navbar } from '@mantine/core'
+import { useState } from 'react'
+import { BarberBrush } from '@icon-park/react'
 import { TOOLS } from './utils/tools'
+import { MapState, UiState } from './types/state'
+import { DEFAULT_FILLS } from './utils/fills'
 
 function App(): JSX.Element {
-  const [state, setState] = useState({
-    activeTool: TOOLS.TERRAIN_BRUSH
+  const [uiState, setUiState] = useState<UiState>({
+    activeTool: TOOLS.TERRAIN_BRUSH,
+    activeFill: 0
+  })
+
+  // TODO: Save/load, each tool responsible for serializing its own state
+  const [mapState, setMapState] = useState<MapState>({
+    background: {
+      fills: DEFAULT_FILLS
+    },
+    objects: null
   })
 
   return (
@@ -21,6 +27,8 @@ function App(): JSX.Element {
         navbar={
           <Navbar width={{ base: 300 }} p="md">
             <NavLink label="Brush" icon={<BarberBrush />} />
+            <Button onClick={() => setUiState({ ...uiState, activeFill: 0 })}>Red</Button>
+            <Button onClick={() => setUiState({ ...uiState, activeFill: 1 })}>Blue</Button>
           </Navbar>
         }
         header={
@@ -35,7 +43,7 @@ function App(): JSX.Element {
           }
         })}
       >
-        <PixiCanvas activeTool={state.activeTool} />
+        <PixiCanvas uiState={uiState} mapState={mapState} setMapState={setMapState} />
       </AppShell>
     </MantineProvider>
   )

@@ -1,8 +1,11 @@
-import { Stage } from '@pixi/react'
+import { Sprite, Stage } from '@pixi/react'
 import { TOOLS, TOOL } from '../utils/tools'
 import { TerrainBrush } from './TerrainBrush'
+import { useUndo } from '@renderer/utils/undo'
 import { useEffect, useState } from 'react'
-import { UndoCommand, useUndo, useUndoStack } from '@renderer/utils/undo'
+import { MapState, UiState } from '@renderer/types/state'
+import { Texture } from 'pixi.js'
+import { STRATAS } from '@renderer/types/stratas'
 
 // Basic algorithm for brush:
 // - Maintain mapping of color to texture
@@ -12,28 +15,45 @@ import { UndoCommand, useUndo, useUndoStack } from '@renderer/utils/undo'
 // - Inputs: texture array, array index, mouse position, backing pixel array
 // - Outputs: Rendered raster image of background
 interface PixiCanvasProps {
-  activeTool: TOOL
+  uiState: UiState
+  mapState: MapState
+  setMapState: (mapState: MapState) => void
 }
 
-export function PixiCanvas({ activeTool }: PixiCanvasProps) {
-  const width = 400
-  const height = 400
+export function PixiCanvas({ uiState, mapState, setMapState }: PixiCanvasProps) {
+  const width = 512
+  const height = 512
 
   // TODO: Handle viewport
-  // TODO: Each tool handles its own cursor
-  // TODO: Each tool handles its own pointer events
-  // TODO: Global undo/redo stack, use context to pass undo/redo functions to tools
-
+  const [cursor, setCursor] = useState('default')
   const { push } = useUndo()
+
   return (
-    <Stage
-      width={width}
-      height={height}
-      options={{ backgroundColor: 0x1099bb, antialias: true, resolution: 2 }}
-    >
-      {activeTool === TOOLS.TERRAIN_BRUSH && (
-        <TerrainBrush width={width} height={height} setCursor={() => {}} pushUndo={push} />
-      )}
-    </Stage>
+    <div style={{ cursor, width: '100%', height: '100%' }}>
+      <Stage width={width} height={height} options={{ antialias: true, resolution: 2 }}>
+        {/** Background strata */}
+        {/* <Sprite
+          texture={mapState.background.texture || Texture.EMPTY}
+          zIndex={STRATAS.BACKGROUND}
+        /> */}
+
+        {/** Object strata */}
+
+        {/** Tool strata */}
+        {uiState.activeTool === TOOLS.TERRAIN_BRUSH && (
+          <TerrainBrush
+            width={width}
+            height={height}
+            setCursor={setCursor}
+            pushUndo={push}
+            mapState={mapState}
+            setMapState={setMapState}
+            activeFill={uiState.activeFill}
+          />
+        )}
+
+        {/** UI strata */}
+      </Stage>
+    </div>
   )
 }

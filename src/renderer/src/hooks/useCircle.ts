@@ -25,11 +25,9 @@ export function useCircle() {
     // make sure to apply a transform Matrix
     app.renderer.render(templateShape, {
       renderTexture,
-      transform: new Matrix(1, 0, 0, 1, width / 2, height / 2)
+      transform: new Matrix(1, 0, 0, 1, width / 2, height / 2),
+      blit: true
     })
-
-    // Not sure if this is necessary
-    app.renderer.framebuffer.blit()
 
     circle.current = renderTexture
 
