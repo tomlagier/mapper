@@ -1,14 +1,13 @@
 import { Container, Sprite, useApp } from '@pixi/react'
 import { useEffect, useRef, useState } from 'react'
 import { getSplatterCircles } from '@renderer/utils/circles'
-import { Texture, Rectangle, Filter, FORMATS, RenderTexture, MSAA_QUALITY } from 'pixi.js'
+import { Texture, Rectangle, Filter, RenderTexture, MSAA_QUALITY, Graphics } from 'pixi.js'
 import { useCircle } from '@renderer/hooks/useCircle'
 import { UndoCommand } from '@renderer/utils/undo'
 import { MapState } from '@renderer/types/state'
 import { STRATAS } from '@renderer/types/stratas'
-import blue from '@resources/backgroundTextures/blue.webp'
-import red from '@resources/backgroundTextures/red.webp'
-import { BLEND_MODES } from 'pixi.js'
+import blue from '@resources/backgroundTextures/grass1.png'
+import red from '@resources/backgroundTextures/stones.png'
 
 interface TerrainBrushProps {
   width: number
@@ -36,8 +35,8 @@ export function TerrainBrush({
   activeFill
 }: TerrainBrushProps) {
   const size = 10
-  const splatterRadius = 100
-  const splatterAmount = 10
+  const splatterRadius = 1
+  const splatterAmount = 1
   const [circles, setCircles] = useState<Array<Array<number>>>([])
 
   // Our render texture isn't created until the component is mounted, so we don't render our unsaved
@@ -76,12 +75,19 @@ export function TerrainBrush({
       resolution: window.devicePixelRatio
     })
 
+    // There must be a better way to do this but I can't figure it out
+    const g = new Graphics().beginFill(0xffffff).drawRect(0, 0, width, height).endFill()
+
+    app.renderer.render(g, { renderTexture, blit: true })
+
     const r2 = RenderTexture.create({
       width,
       height,
       multisample: MSAA_QUALITY.HIGH,
       resolution: window.devicePixelRatio
     })
+
+    r2.baseTexture.clearColor = [0, 0, 0, 255]
 
     setPrevTex(renderTexture)
     setT2(r2)
@@ -145,11 +151,12 @@ export function TerrainBrush({
 
   // Periodically save out the texture while dragging.
   // Currently causes flickering, but could be implemented as a performance improvement in the future
-  // const limit = 100
-  // useEffect(() => {
-  //   if (circles.length < limit) return
-  //   saveTexture()
-  // }, [circles])
+  const limit = 50
+  useEffect(() => {
+    if (circles.length < limit) return
+    saveTexture()
+  }, [circles])
+
   const blueRef = useRef(null)
   const redRef = useRef(null)
   const containerRef = useRef(null)
@@ -160,16 +167,35 @@ export function TerrainBrush({
   return (
     <>
       <Sprite
-        ref={redRef}
+        eventMode="static"
         x={0}
         y={0}
         width={width}
         height={height}
-        texture={prevTex || Texture.EMPTY}
-        zIndex={-999}
-        // tint="white"
-        filters={[redFilter]}
-        // filterArea={new Rectangle(0, 0, width, height)}
+        texture={Texture.EMPTY}
+        pointermove={(e) => {
+          if (e.buttons !== 1) return
+
+          // Mouse is down, add our circles
+          const newCircles = getSplatterCircles({
+            x: e.global.x,
+            y: e.global.y,
+            splatterRadius,
+            splatterAmount,
+            size
+          })
+
+          setCircles([...circles, ...newCircles])
+        }}
+        pointerdown={() => {
+          const tex = saveTexture()
+          // setPrevTex(tex)
+        }}
+        pointerup={() => {
+          const tex = saveTexture()
+          // pushUndo(new TerrainUndoCommand(prevTex, tex, setCurrTex))
+        }}
+        zIndex={-9999}
       />
       <Container ref={inverseContainerRef}>
         {mounted &&
@@ -186,38 +212,7 @@ export function TerrainBrush({
             />
           ))}
       </Container>
-      <Container ref={containerRef} zIndex={999}>
-        <Sprite
-          eventMode="static"
-          x={0}
-          y={0}
-          width={width}
-          height={height}
-          texture={Texture.EMPTY}
-          pointermove={(e) => {
-            if (e.buttons !== 1) return
-
-            // Mouse is down, add our circles
-            const newCircles = getSplatterCircles({
-              x: e.global.x,
-              y: e.global.y,
-              splatterRadius,
-              splatterAmount,
-              size
-            })
-
-            setCircles([...circles, ...newCircles])
-          }}
-          pointerdown={() => {
-            const tex = saveTexture()
-            // setPrevTex(tex)
-          }}
-          pointerup={() => {
-            const tex = saveTexture()
-            // pushUndo(new TerrainUndoCommand(prevTex, tex, setCurrTex))
-          }}
-          zIndex={-9999}
-        />
+      <Container ref={containerRef}>
         {mounted &&
           circles.map(([x, y, size], i) => (
             <Sprite
@@ -232,17 +227,6 @@ export function TerrainBrush({
             />
           ))}
       </Container>
-      {/* <Sprite
-        ref={blueRef}
-        x={0}
-        y={0}
-        width={width}
-        height={height}
-        texture={mapState.background.fills[1].texture || Texture.EMPTY}
-        zIndex={-2}
-        filters={[redFilter]}
-        filterArea={new Rectangle(0, 0, width, height)}
-      /> */}
 
       {/* <Sprite
         texture={mapState.background.texture || Texture.EMPTY}
@@ -253,6 +237,30 @@ export function TerrainBrush({
         y={0}
         filters={[testFilter]}
       /> */}
+
+      <Sprite
+        ref={redRef}
+        x={0}
+        y={0}
+        width={width}
+        height={height}
+        texture={prevTex || Texture.EMPTY}
+        zIndex={999}
+        // tint="white"
+        filters={[redFilter]}
+        // filterArea={new Rectangle(0, 0, width, height)}
+      />
+      <Sprite
+        ref={blueRef}
+        x={0}
+        y={0}
+        width={width}
+        height={height}
+        texture={t2 || Texture.EMPTY}
+        zIndex={-2}
+        filters={[blueFilter]}
+        // filterArea={new Rectangle(0, 0, width, height)}
+      />
     </>
   )
 }
@@ -293,15 +301,12 @@ void main(void)
   // Ignore full transparent pixels
   if(sourcePixel.a == 0.0) discard;
 
-  // vec2 samplePixel = vTextureCoord * 128.0;
-  vec4 samplePixel = texture2D(sample, vTextureCoord);
+  vec2 sampleCoords = fract(vTextureCoord * 8.0);
+  vec4 samplePixel = texture2D(sample, sampleCoords);
 
-  vec4 result = vec4(samplePixel.rgb * sourcePixel.r * sourcePixel.a, sourcePixel.a);
+  vec4 result = vec4(samplePixel.rgb * sourcePixel.r * sourcePixel.a, sourcePixel.r * sourcePixel.a);
 
-  // If source pixel is white, we sample color
   gl_FragColor = result;
-
-  // if(gl_FragColor.rgb == vec3(0.0)) discard;
 }
 `
 
