@@ -9,7 +9,8 @@ import {
   MSAA_QUALITY,
   Graphics,
   Point,
-  BlurFilter
+  BlurFilter,
+  Sprite as PixiSprite
 } from 'pixi.js'
 import { useCircle } from '@renderer/hooks/useCircle'
 import { UndoCommand } from '@renderer/utils/undo'
@@ -17,6 +18,7 @@ import { MapState } from '@renderer/types/state'
 import { STRATAS } from '@renderer/types/stratas'
 import blue from '@resources/backgroundTextures/grass1.png'
 import red from '@resources/backgroundTextures/stones.png'
+import { DEFAULT_FILLS } from '@renderer/utils/fills'
 
 interface TerrainBrushProps {
   width: number
@@ -58,117 +60,111 @@ export function TerrainBrush({
   // Texture to render a single circle
   const circleTexture = useCircle()
 
-  // Combined texture that gets saved out when we collapse textures
-  const [prevTex, setPrevTex] = useState<Texture>()
-  const [t2, setT2] = useState<Texture>()
+  const app = useApp()
+  const [prevTex, _setPrevTex] = useState<Record<string, Texture>>({})
 
-  // Current fill that we're painting
-  const fill = mapState.background.fills[activeFill]
+  const setCurrTex = (tex: Record<string, Texture>) => {
+    // TODO: oof
+    setMapState((s) => {
+      // Merge our textures with the existing fills
+      const fills = { ...s.background.fills }
+      for (const [id, texture] of Object.entries(tex)) {
+        fills[id].texture = texture
+      }
 
-  const setCurrTex = (tex: Texture) => {
-    // We need to do a few things:
-    // - Update the fillMap texture
-    // - Update the final texture
-    setMapState({ ...mapState, background: { ...mapState.background, texture: tex } })
+      return {
+        ...s,
+        background: {
+          ...s.background,
+          fills
+        }
+      }
+    })
   }
 
-  const app = useApp()
+  const setPrevTex = () => {
+    _setPrevTex((s) => {
+      const prev = {}
+      for (const [id, { texture }] of Object.entries(mapState.background.fills)) {
+        const renderTexture = RenderTexture.create({
+          width,
+          height,
+          multisample: MSAA_QUALITY.HIGH,
+          resolution: window.devicePixelRatio
+        })
 
+        app.renderer.render(new PixiSprite(texture), {
+          renderTexture,
+          region: new Rectangle(0, 0, width, height),
+          resolution: 2,
+          blit: true
+        })
+
+        prev[id] = renderTexture
+      }
+
+      console.log('down end')
+      return prev
+    })
+  }
+
+  // Initialize the renderTextures used for each loaded fill
+  // TODO: Initialize from saved state, and allow for new fills to be added
   useEffect(() => {
     if (!app) return
 
-    const renderTexture = RenderTexture.create({
-      width,
-      height,
-      multisample: MSAA_QUALITY.HIGH,
-      resolution: window.devicePixelRatio
-    })
+    let firstTexture
+    const tex: Record<string, Texture> = {}
+    for (const id of Object.keys(mapState.background.fills)) {
+      const renderTexture = RenderTexture.create({
+        width,
+        height,
+        multisample: MSAA_QUALITY.HIGH,
+        resolution: window.devicePixelRatio
+      })
 
-    // There must be a better way to do this but I can't figure it out
+      // TODO: Pull the first texture & only do the paint if it's a new canvas
+      if (id === 'grass') {
+        firstTexture = renderTexture
+      }
+
+      tex[id] = renderTexture
+    }
+
+    // There must be a better way to do this but I can't figure it out. Fill the default
+    // texture with white so that we can use it as a mask.
     const g = new Graphics().beginFill(0xffffff).drawRect(0, 0, width, height).endFill()
+    app.renderer.render(g, { renderTexture: firstTexture, blit: true })
 
-    app.renderer.render(g, { renderTexture, blit: true })
-
-    const r2 = RenderTexture.create({
-      width,
-      height,
-      multisample: MSAA_QUALITY.HIGH,
-      resolution: window.devicePixelRatio
-    })
-
-    r2.baseTexture.clearColor = [0, 0, 0, 255]
-
-    setPrevTex(renderTexture)
-    setT2(r2)
+    setCurrTex(tex)
   }, [app])
 
-  // Saves the combined circles out to a texture for performance
-  // TODO: Proper multiple texture support
+  // Update our render texture with the batch of circles drawn since the last save.
   const saveTexture = async () => {
     if (circles.length === 0) return
 
-    // Render white into prevTex
-    app.renderer.render(containerRef.current, {
-      region: new Rectangle(0, 0, width, height),
-      resolution: 2,
-      renderTexture: activeFill === 0 ? prevTex : t2,
-      blit: true,
-      clear: false
-    })
+    for (const [id, fill] of Object.entries(mapState.background.fills)) {
+      const isActive = id === activeFill
+      const container = isActive ? containerRef.current : inverseContainerRef.current
+      app.renderer.render(container, {
+        region: new Rectangle(0, 0, width, height),
+        resolution: 2,
+        renderTexture: fill.texture,
+        blit: true,
+        clear: false
+      })
+    }
 
-    // Render black into t2
-    app.renderer.render(inverseContainerRef.current, {
-      region: new Rectangle(0, 0, width, height),
-      resolution: 2,
-      renderTexture: activeFill === 0 ? t2 : prevTex,
-      blit: true,
-      clear: false
-    })
-
-    // Add pixels to current fill texture
-    // const currentFillPixels = fill.pixels || new Uint8Array(circlePixels.length).fill(0)
-
-    // for (let i = 0; i < circlePixels.length; i++) {
-    //   const isAlpha = i % 4 === 3
-    //   if (isAlpha) currentFillPixels[i] += Math.min(circlePixels[i], 255)
-    //   else currentFillPixels[i] = circlePixels[i]
-    // }
-
-    // // Create new texture from pixels
-    // const fillTex = Texture.fromBuffer(circlePixels, width, height, {
-    //   resolution: 2
-    // })
-
-    // setPrevTex(fillTex)
-
-    // Assign to fill texture
-    // setMapState({
-    //   ...mapState,
-    //   background: {
-    //     ...mapState.background,
-    //     fills: [
-    //       ...mapState.background.fills.slice(0, activeFill),
-    //       { ...fill, pixels: currentFillPixels, texture: fillTex },
-    //       ...mapState.background.fills.slice(activeFill + 1)
-    //     ]
-    //   }
-    // })
-
-    setCircles([])
+    setCircles(() => [])
   }
 
-  // Load our fill textures
-
   // Periodically save out the texture while dragging.
-  // Currently causes flickering, but could be implemented as a performance improvement in the future
   const limit = 25
   useEffect(() => {
     if (circles.length < limit) return
     saveTexture()
   }, [circles])
 
-  const blueRef = useRef(null)
-  const redRef = useRef(null)
   const containerRef = useRef(null)
   const inverseContainerRef = useRef(null)
 
@@ -183,9 +179,8 @@ export function TerrainBrush({
         width={width}
         height={height}
         texture={Texture.EMPTY}
-        // TODO: Move to storing coordinates and rendering every X pixels rather than on every
-        // pointermove event
         pointermove={(e) => {
+          // TODO: Clean this up
           if (e.buttons !== 1) return
 
           let lastX = lastCircleSpot.x
@@ -213,7 +208,6 @@ export function TerrainBrush({
             })
 
             _c.push(...newCircles)
-            console.log(_c.length)
             lastX = x
             lastY = y
           }
@@ -226,7 +220,10 @@ export function TerrainBrush({
             setLastCircleSpot({ x: lastX, y: lastY })
           }
         }}
-        pointerdown={(e) => {
+        pointerdown={async (e) => {
+          // Save out our previous texture state
+          setPrevTex()
+
           const newCircles = getSplatterCircles({
             x: e.global.x,
             y: e.global.y,
@@ -235,15 +232,34 @@ export function TerrainBrush({
             size
           })
 
-          setCircles([...circles, ...newCircles])
-          setLastCircleSpot({ ...e.global })
+          setCircles((c) => [...c, ...newCircles])
+          setLastCircleSpot(() => ({ ...e.global }))
 
-          // setPrevTex(tex)
-          const tex = saveTexture()
+          await saveTexture()
         }}
-        pointerup={() => {
-          const tex = saveTexture()
-          // pushUndo(new TerrainUndoCommand(prevTex, tex, setCurrTex))
+        pointerup={async () => {
+          console.log('up start')
+          await saveTexture()
+          const currTex = {}
+          for (const [id, { texture }] of Object.entries(mapState.background.fills)) {
+            const renderTexture = RenderTexture.create({
+              width,
+              height,
+              multisample: MSAA_QUALITY.HIGH,
+              resolution: window.devicePixelRatio
+            })
+
+            app.renderer.render(new PixiSprite(texture), {
+              renderTexture,
+              region: new Rectangle(0, 0, width, height),
+              resolution: 2,
+              blit: true
+            })
+
+            currTex[id] = renderTexture
+          }
+          pushUndo(new TerrainUndoCommand(prevTex, currTex, setCurrTex))
+          console.log('up end')
         }}
         zIndex={-9999}
       />
@@ -278,48 +294,34 @@ export function TerrainBrush({
           ))}
       </Container>
 
-      {/* <Sprite
-        texture={mapState.background.texture || Texture.EMPTY}
-        zIndex={STRATAS.OBJECTS}
-        width={width}
-        height={height}
-        x={0}
-        y={0}
-        filters={[testFilter]}
-      /> */}
+      {Object.entries(mapState.background.fills).map(([id, fill], idx) => {
+        // TODO: Cache this
+        const filter = new Filter(undefined, fragShader, {
+          sample: Texture.from(fill.path)
+        }) // both default
+        filter.resolution = 2
 
-      <Sprite
-        ref={redRef}
-        x={0}
-        y={0}
-        width={width}
-        height={height}
-        texture={prevTex || Texture.EMPTY}
-        zIndex={999}
-        // tint="white"
-        filters={[redFilter]}
-        // filterArea={new Rectangle(0, 0, width, height)}
-      />
-      <Sprite
-        ref={blueRef}
-        x={0}
-        y={0}
-        width={width}
-        height={height}
-        texture={t2 || Texture.EMPTY}
-        zIndex={-2}
-        filters={[blueFilter]}
-        // filterArea={new Rectangle(0, 0, width, height)}
-      />
+        return (
+          <Sprite
+            key={id}
+            x={0}
+            y={0}
+            width={width}
+            height={height}
+            texture={fill.texture || Texture.EMPTY}
+            filters={[filter]}
+          />
+        )
+      })}
     </>
   )
 }
 
 class TerrainUndoCommand implements UndoCommand {
   constructor(
-    private prevTex: Texture | undefined,
-    private currTex: Texture | undefined,
-    private setCurrTex: (tex: Texture) => void
+    private prevTex: Record<string, Texture>,
+    private currTex: Record<string, Texture>,
+    private setCurrTex: (tex: Record<string, Texture>) => void
   ) {}
 
   undo() {
@@ -359,13 +361,3 @@ void main(void)
   gl_FragColor = result;
 }
 `
-
-const blueFilter = new Filter(undefined, fragShader, {
-  sample: Texture.from(blue)
-}) // both default
-blueFilter.resolution = 2
-
-const redFilter = new Filter(undefined, fragShader, {
-  sample: Texture.from(red)
-}) // both default
-redFilter.resolution = 2

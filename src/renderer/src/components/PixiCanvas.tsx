@@ -32,14 +32,6 @@ export function PixiCanvas({ uiState, mapState, setMapState }: PixiCanvasProps) 
     <div style={{ cursor, width: '100%', height: '100%' }}>
       <Stage width={width} height={height} options={{ antialias: true, resolution: 2 }}>
         {/** Background strata */}
-        {/* <Sprite
-          texture={mapState.background.texture || Texture.EMPTY}
-          zIndex={STRATAS.BACKGROUND}
-        /> */}
-
-        {/** Object strata */}
-
-        {/** Tool strata */}
         {uiState.activeTool === TOOLS.TERRAIN_BRUSH && (
           <TerrainBrush
             width={width}
@@ -51,6 +43,10 @@ export function PixiCanvas({ uiState, mapState, setMapState }: PixiCanvasProps) 
             activeFill={uiState.activeFill}
           />
         )}
+
+        {/** Object strata */}
+
+        {/** Tool strata */}
 
         {/** UI strata */}
       </Stage>

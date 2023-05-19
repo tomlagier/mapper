@@ -9,7 +9,7 @@ import { DEFAULT_FILLS } from './utils/fills'
 function App(): JSX.Element {
   const [uiState, setUiState] = useState<UiState>({
     activeTool: TOOLS.TERRAIN_BRUSH,
-    activeFill: 0
+    activeFill: Object.keys(DEFAULT_FILLS)[0]
   })
 
   // TODO: Save/load, each tool responsible for serializing its own state
@@ -27,8 +27,15 @@ function App(): JSX.Element {
         navbar={
           <Navbar width={{ base: 300 }} p="md">
             <NavLink label="Brush" icon={<BarberBrush />} />
-            <Button onClick={() => setUiState({ ...uiState, activeFill: 0 })}>Red</Button>
-            <Button onClick={() => setUiState({ ...uiState, activeFill: 1 })}>Blue</Button>
+            {Object.keys(mapState.background.fills).map((id) => (
+              <Button
+                color={uiState.activeFill === id ? 'green' : 'blue'}
+                key={id}
+                onClick={() => setUiState({ ...uiState, activeFill: id })}
+              >
+                {id}
+              </Button>
+            ))}
           </Navbar>
         }
         header={
