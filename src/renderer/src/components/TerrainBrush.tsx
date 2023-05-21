@@ -8,17 +8,15 @@ import {
   RenderTexture,
   MSAA_QUALITY,
   Graphics,
-  Point,
   BlurFilter,
-  Sprite as PixiSprite
+  Sprite as PixiSprite,
+  Application
 } from 'pixi.js'
 import { useCircle } from '@renderer/hooks/useCircle'
 import { UndoCommand } from '@renderer/utils/undo'
-import { MapState } from '@renderer/types/state'
+import { FillTexture, MapState } from '@renderer/types/state'
 import { STRATAS } from '@renderer/types/stratas'
-import blue from '@resources/backgroundTextures/grass1.png'
-import red from '@resources/backgroundTextures/stones.png'
-import { DEFAULT_FILLS } from '@renderer/utils/fills'
+import { Point, getNormalizedMagnitude, interpolate } from '@renderer/utils/interpolate'
 
 interface TerrainBrushProps {
   width: number
@@ -31,9 +29,9 @@ interface TerrainBrushProps {
 
   // Map state
   mapState: MapState
-  setMapState: (mapState: MapState) => void
+  setMapState: (mapState: MapState | ((s: MapState) => MapState)) => void
 
-  activeFill: number
+  activeFill: string
 }
 
 export function TerrainBrush({
@@ -45,9 +43,12 @@ export function TerrainBrush({
   setMapState,
   activeFill
 }: TerrainBrushProps) {
+  // Eventually these will be controlled by the UI layer
   const size = 25
   const splatterRadius = 100
   const splatterAmount = 15
+
+  // Array of circles that are going to be added to the canvas..
   const [circles, setCircles] = useState<Array<Array<number>>>([])
 
   // Our render texture isn't created until the component is mounted, so we don't render our unsaved
@@ -61,10 +62,11 @@ export function TerrainBrush({
   const circleTexture = useCircle()
 
   const app = useApp()
-  const [prevTex, _setPrevTex] = useState<Record<string, Texture>>({})
+  const [prevTex, _setPrevTex] = useState<Record<string, RenderTexture>>({})
 
-  const setCurrTex = (tex: Record<string, Texture>) => {
-    // TODO: oof
+  // Sets the current set of terrain textures in map state
+  const setCurrTex = (tex: Record<string, RenderTexture>) => {
+    // TODO: Fix state updates
     setMapState((s) => {
       // Merge our textures with the existing fills
       const fills = { ...s.background.fills }
@@ -82,40 +84,40 @@ export function TerrainBrush({
     })
   }
 
-  const setPrevTex = () => {
-    _setPrevTex((s) => {
-      const prev = {}
-      for (const [id, { texture }] of Object.entries(mapState.background.fills)) {
-        const renderTexture = RenderTexture.create({
-          width,
-          height,
-          multisample: MSAA_QUALITY.HIGH,
-          resolution: window.devicePixelRatio
-        })
-
-        app.renderer.render(new PixiSprite(texture), {
-          renderTexture,
-          region: new Rectangle(0, 0, width, height),
-          resolution: 2,
-          blit: true
-        })
-
-        prev[id] = renderTexture
+  const setFilters = (filters: Record<string, Filter>) => {
+    setMapState((s) => {
+      const fills = { ...s.background.fills }
+      for (const [id, filter] of Object.entries(filters)) {
+        fills[id].filter = filter
       }
 
-      console.log('down end')
+      return {
+        ...s,
+        background: {
+          ...s.background,
+          fills
+        }
+      }
+    })
+  }
+
+  // Save a simpler texMap of previous textures, u sed for undo state
+  const setPrevTex = () => {
+    _setPrevTex(() => {
+      const prev = renderUndoTextures({ width, height, app, fills: mapState.background.fills })
+
       return prev
     })
   }
 
-  // Initialize the renderTextures used for each loaded fill
-  // TODO: Initialize from saved state, and allow for new fills to be added
+  // Initialize the renderTextures and filters used for each loaded fill.
   useEffect(() => {
     if (!app) return
 
     let firstTexture
-    const tex: Record<string, Texture> = {}
-    for (const id of Object.keys(mapState.background.fills)) {
+    const tex: Record<string, RenderTexture> = {}
+    const filters: Record<string, Filter> = {}
+    for (const [id, fill] of Object.entries(mapState.background.fills)) {
       const renderTexture = RenderTexture.create({
         width,
         height,
@@ -129,6 +131,12 @@ export function TerrainBrush({
       }
 
       tex[id] = renderTexture
+
+      const filter = new Filter(undefined, fragShader, {
+        sample: Texture.from(fill.path)
+      })
+      filter.resolution = 2
+      filters[id] = filter
     }
 
     // There must be a better way to do this but I can't figure it out. Fill the default
@@ -137,18 +145,20 @@ export function TerrainBrush({
     app.renderer.render(g, { renderTexture: firstTexture, blit: true })
 
     setCurrTex(tex)
+    setFilters(filters)
   }, [app])
 
   // Update our render texture with the batch of circles drawn since the last save.
   const saveTexture = async () => {
     if (circles.length === 0) return
 
+    // We fill the active texture's layer with white circles, and all the other layers
+    // with black so we're adding the paint to the correct layer and subtracting it from the
+    // rest, allowing us to be layer order agnostic.
     for (const [id, fill] of Object.entries(mapState.background.fills)) {
       const isActive = id === activeFill
       const container = isActive ? containerRef.current : inverseContainerRef.current
-      app.renderer.render(container, {
-        region: new Rectangle(0, 0, width, height),
-        resolution: 2,
+      app.renderer.render(container!, {
         renderTexture: fill.texture,
         blit: true,
         clear: false
@@ -158,20 +168,24 @@ export function TerrainBrush({
     setCircles(() => [])
   }
 
-  // Periodically save out the texture while dragging.
+  // Periodically save out the circles to texture while dragging.
   const limit = 25
   useEffect(() => {
     if (circles.length < limit) return
     saveTexture()
   }, [circles])
 
+  // Refs for the container we use to render out the circles
   const containerRef = useRef(null)
   const inverseContainerRef = useRef(null)
 
-  const [lastCircleSpot, setLastCircleSpot] = useState(null)
+  // Because the sample pointermove sample rate is kinda low, we use interpolation to render
+  // circles between ticks of pointermove. This tracks that state.
+  const [lastCircleSpot, setLastCircleSpot] = useState<Point>()
   const paintInterval = 5
   return (
     <>
+      {/** This container tracks the pointer events used to paint and stop painting. */}
       <Sprite
         eventMode="static"
         x={0}
@@ -180,25 +194,37 @@ export function TerrainBrush({
         height={height}
         texture={Texture.EMPTY}
         pointermove={(e) => {
-          // TODO: Clean this up
+          // 1 = left click
           if (e.buttons !== 1) return
 
-          let lastX = lastCircleSpot.x
-          let lastY = lastCircleSpot.y
+          // This is our start point that we interpolate from, towards the current mouse position
+          const originalX = lastCircleSpot?.x || e.global.x
+          const originalY = lastCircleSpot?.y || e.global.y
+
+          // These are the interstital points that we paint between originalX/Y and the pointer
+          const lastDrawn = { x: originalX, y: originalY }
+
+          // Distance in px between the last time we drew circles and the current mouse position
           let distance = Math.sqrt(
-            Math.pow(e.global.x - lastCircleSpot.x, 2) + Math.pow(e.global.y - lastCircleSpot.y, 2)
+            Math.pow(e.global.x - lastDrawn.x, 2) + Math.pow(e.global.y - lastDrawn.y || 0, 2)
           )
 
-          const _c = []
+          // Normalized magnitude of the distance between the last drawn point and the current mouse
+          const magnitude = getNormalizedMagnitude({
+            startPoint: lastCircleSpot || e.global,
+            endPoint: e.global
+          })
+
+          // Circles we're going to add to the canvas
+          const _c: number[][] = []
           while (distance && distance > paintInterval) {
             distance -= paintInterval
-            // Get X and Y coordinates along the line
-            const v = new Point(e.global.x - lastCircleSpot.x, e.global.y - lastCircleSpot.y)
-            const magnitude = Math.sqrt(Math.pow(v.x, 2) + Math.pow(v.y, 2))
-            const normalized = new Point(v.x / magnitude, v.y / magnitude)
-            const x = lastX + normalized.x * paintInterval
-            const y = lastY + normalized.y * paintInterval
 
+            // Generates a point on the line between origialX/Y and the current mouse position that
+            // is paintInterval px away from the last drawn point.
+            const { x, y } = interpolate({ point: lastDrawn, magnitude, stepSize: paintInterval })
+
+            // Get circles from that point
             const newCircles = getSplatterCircles({
               x,
               y,
@@ -208,20 +234,25 @@ export function TerrainBrush({
             })
 
             _c.push(...newCircles)
-            lastX = x
-            lastY = y
+
+            // Update our last drawn point
+            lastDrawn.x = x
+            lastDrawn.y = y
           }
 
           if (_c.length) {
             setCircles([...circles, ..._c])
           }
 
-          if (lastY !== lastCircleSpot.y || lastX !== lastCircleSpot.x) {
-            setLastCircleSpot({ x: lastX, y: lastY })
+          if (lastDrawn.x !== originalX || lastDrawn.y !== originalY) {
+            setLastCircleSpot(lastDrawn)
           }
         }}
         pointerdown={async (e) => {
-          // Save out our previous texture state
+          // TODO: This probably should work when we drag from offscreen as well b/c currently
+          // that breaks the undo stack.
+
+          // Push the current terrain textures to the undo stack
           setPrevTex()
 
           const newCircles = getSplatterCircles({
@@ -238,32 +269,30 @@ export function TerrainBrush({
           await saveTexture()
         }}
         pointerup={async () => {
-          console.log('up start')
+          // Complete our interpolation, save any outstanding circles to textures, then push
+          // textures to undo stack.
           await saveTexture()
-          const currTex = {}
-          for (const [id, { texture }] of Object.entries(mapState.background.fills)) {
-            const renderTexture = RenderTexture.create({
-              width,
-              height,
-              multisample: MSAA_QUALITY.HIGH,
-              resolution: window.devicePixelRatio
-            })
-
-            app.renderer.render(new PixiSprite(texture), {
-              renderTexture,
-              region: new Rectangle(0, 0, width, height),
-              resolution: 2,
-              blit: true
-            })
-
-            currTex[id] = renderTexture
-          }
+          const currTex = renderUndoTextures({
+            app,
+            width,
+            height,
+            fills: mapState.background.fills
+          })
           pushUndo(new TerrainUndoCommand(prevTex, currTex, setCurrTex))
-          console.log('up end')
         }}
         zIndex={-9999}
       />
-      <Container ref={inverseContainerRef} filters={[new BlurFilter()]}>
+      {/**
+       * Container that contains our inverse circles, i.e. the black circles we paint
+       * on all non-active texture layers */}
+      <Container
+        ref={inverseContainerRef}
+        // TODO: Allow parameterization of the blur
+        // Because this is getting applied to the circles, it will get "baked in" to the render
+        // texture & can't be dynamically updated for past painted things. If we want to sharpen
+        // existing edges, we need to play with the alpha cutoffs that we render stuff at.
+        filters={[new BlurFilter()]}
+      >
         {mounted &&
           circles.map(([x, y, size], i) => (
             <Sprite
@@ -278,6 +307,7 @@ export function TerrainBrush({
             />
           ))}
       </Container>
+      {/** Container that contains the circles to paint on the active layer */}
       <Container ref={containerRef} filters={[new BlurFilter()]}>
         {mounted &&
           circles.map(([x, y, size], i) => (
@@ -295,12 +325,8 @@ export function TerrainBrush({
       </Container>
 
       {Object.entries(mapState.background.fills).map(([id, fill], idx) => {
-        // TODO: Cache this
-        const filter = new Filter(undefined, fragShader, {
-          sample: Texture.from(fill.path)
-        }) // both default
-        filter.resolution = 2
-
+        const filters: Filter[] = []
+        if (fill.filter) filters.push(fill.filter)
         return (
           <Sprite
             key={id}
@@ -309,7 +335,7 @@ export function TerrainBrush({
             width={width}
             height={height}
             texture={fill.texture || Texture.EMPTY}
-            filters={[filter]}
+            filters={filters}
           />
         )
       })}
@@ -319,9 +345,9 @@ export function TerrainBrush({
 
 class TerrainUndoCommand implements UndoCommand {
   constructor(
-    private prevTex: Record<string, Texture>,
-    private currTex: Record<string, Texture>,
-    private setCurrTex: (tex: Record<string, Texture>) => void
+    private prevTex: Record<string, RenderTexture>,
+    private currTex: Record<string, RenderTexture>,
+    private setCurrTex: (tex: Record<string, RenderTexture>) => void
   ) {}
 
   undo() {
@@ -335,6 +361,40 @@ class TerrainUndoCommand implements UndoCommand {
       this.setCurrTex(this.currTex)
     }
   }
+}
+
+// Given the current fills, creates a map of fill ID to RenderTexture that can be used to undo/redo
+// the current canvas state.
+interface RenderUndoTexturesArgs {
+  fills: Record<string, FillTexture>
+  width: number
+  height: number
+  app: Application
+}
+function renderUndoTextures({
+  fills,
+  width,
+  height,
+  app
+}: RenderUndoTexturesArgs): Record<string, RenderTexture> {
+  const texMap = {}
+  for (const [id, { texture }] of Object.entries(fills)) {
+    const renderTexture = RenderTexture.create({
+      width,
+      height,
+      multisample: MSAA_QUALITY.HIGH,
+      resolution: window.devicePixelRatio
+    })
+
+    app.renderer.render(new PixiSprite(texture), {
+      renderTexture,
+      blit: true
+    })
+
+    texMap[id] = renderTexture
+  }
+
+  return texMap
 }
 
 const fragShader = `
@@ -353,6 +413,7 @@ void main(void)
   // Ignore full transparent pixels
   if(sourcePixel.a == 0.0) discard;
 
+  // TODO: Support arbitrary image size
   vec2 sampleCoords = fract(vTextureCoord * 8.0);
   vec4 samplePixel = texture2D(sample, sampleCoords);
 

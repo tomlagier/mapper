@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export interface UndoCommand {
   undo(): void
@@ -10,23 +10,19 @@ export function useUndo() {
   const [redoStack, setRedoStack] = useState<UndoCommand[]>([])
 
   function undo() {
-    console.log('undo start')
     const command = undoStack.pop()
     if (command) {
       command.undo()
       setRedoStack((stack) => [...stack, command])
     }
-    console.log('undo end')
   }
 
   function redo() {
-    console.log('redo start')
     const command = redoStack.pop()
     if (command) {
       command.redo()
       setUndoStack((stack) => [...stack, command])
     }
-    console.log('redo end')
   }
 
   function push(command: UndoCommand) {

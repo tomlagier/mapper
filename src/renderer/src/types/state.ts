@@ -1,5 +1,5 @@
 import { TOOL } from '@renderer/utils/tools'
-import { Texture } from 'pixi.js'
+import { Filter, RenderTexture, Texture } from 'pixi.js'
 
 export interface MapState {
   background: {
@@ -15,10 +15,12 @@ export interface MapState {
 
 // A user-provided texture that we use to render a fill.
 export interface FillTexture {
+  // Path, gets by loaded
   path: string
-  // Loaded texture
-  texture?: Texture
-  // Might have preview png in here as well
+  // Render texture of canvas area
+  texture?: RenderTexture
+  // Filter used to display the texture by mapping the bitmap to the till image
+  filter?: Filter
 }
 
 export interface UiState {
