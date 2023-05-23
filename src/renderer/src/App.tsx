@@ -5,20 +5,10 @@ import { BarberBrush } from '@icon-park/react'
 import { TOOLS } from './utils/tools'
 import { MapState, UiState } from './types/state'
 import { DEFAULT_FILLS } from './utils/fills'
+import { useAppState } from './hooks/useAppState'
 
 function App(): JSX.Element {
-  const [uiState, setUiState] = useState<UiState>({
-    activeTool: TOOLS.TERRAIN_BRUSH,
-    activeFill: Object.keys(DEFAULT_FILLS)[0]
-  })
-
-  // TODO: Save/load, each tool responsible for serializing its own state
-  const [mapState, setMapState] = useState<MapState>({
-    background: {
-      fills: DEFAULT_FILLS
-    },
-    objects: null
-  })
+  const { mapState, uiState, setUiState, setFillTextures } = useAppState()
 
   return (
     <MantineProvider>
@@ -50,7 +40,7 @@ function App(): JSX.Element {
           }
         })}
       >
-        <PixiCanvas uiState={uiState} mapState={mapState} setMapState={setMapState} />
+        <PixiCanvas uiState={uiState} mapState={mapState} setFillTextures={setFillTextures} />
       </AppShell>
     </MantineProvider>
   )

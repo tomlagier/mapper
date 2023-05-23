@@ -33,6 +33,7 @@
     "@pixi/react": "^7.1.0",
     "@pixi/unsafe-eval": "^7.2.4",
     "electron-updater": "^5.3.0",
+    "lodash": "^4.17.21",
     "pixi-viewport": "^5.0.1",
     "pixi.js": "^7.2.4"
   },

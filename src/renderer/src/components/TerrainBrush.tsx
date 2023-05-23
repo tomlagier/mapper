@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from 'react'
 import { getSplatterCircles } from '@renderer/utils/circles'
 import {
   Texture,
-  Rectangle,
   Filter,
   RenderTexture,
   MSAA_QUALITY,
@@ -29,9 +28,9 @@ interface TerrainBrushProps {
 
   // Map state
   mapState: MapState
-  setMapState: (mapState: MapState | ((s: MapState) => MapState)) => void
 
   activeFill: string
+  setFillTextures: (textures: Record<string, Partial<FillTexture>>) => void
 }
 
 export function TerrainBrush({
@@ -40,8 +39,8 @@ export function TerrainBrush({
   setCursor,
   pushUndo,
   mapState,
-  setMapState,
-  activeFill
+  activeFill,
+  setFillTextures
 }: TerrainBrushProps) {
   // Eventually these will be controlled by the UI layer
   const size = 25
@@ -62,52 +61,12 @@ export function TerrainBrush({
   const circleTexture = useCircle()
 
   const app = useApp()
-  const [prevTex, _setPrevTex] = useState<Record<string, RenderTexture>>({})
-
-  // Sets the current set of terrain textures in map state
-  const setCurrTex = (tex: Record<string, RenderTexture>) => {
-    // TODO: Fix state updates
-    setMapState((s) => {
-      // Merge our textures with the existing fills
-      const fills = { ...s.background.fills }
-      for (const [id, texture] of Object.entries(tex)) {
-        fills[id].texture = texture
-      }
-
-      return {
-        ...s,
-        background: {
-          ...s.background,
-          fills
-        }
-      }
-    })
-  }
-
-  const setFilters = (filters: Record<string, Filter>) => {
-    setMapState((s) => {
-      const fills = { ...s.background.fills }
-      for (const [id, filter] of Object.entries(filters)) {
-        fills[id].filter = filter
-      }
-
-      return {
-        ...s,
-        background: {
-          ...s.background,
-          fills
-        }
-      }
-    })
-  }
+  const [prevTex, _setPrevTex] = useState<Record<string, Partial<FillTexture>>>({})
 
   // Save a simpler texMap of previous textures, u sed for undo state
   const setPrevTex = () => {
-    _setPrevTex(() => {
-      const prev = renderUndoTextures({ width, height, app, fills: mapState.background.fills })
-
-      return prev
-    })
+    const prev = renderUndoTextures({ width, height, app, fills: mapState.background.fills })
+    _setPrevTex(() => prev)
   }
 
   // Initialize the renderTextures and filters used for each loaded fill.
@@ -115,8 +74,7 @@ export function TerrainBrush({
     if (!app) return
 
     let firstTexture
-    const tex: Record<string, RenderTexture> = {}
-    const filters: Record<string, Filter> = {}
+    const fillTextures: Record<string, Partial<FillTexture>> = {}
     for (const [id, fill] of Object.entries(mapState.background.fills)) {
       const renderTexture = RenderTexture.create({
         width,
@@ -130,13 +88,11 @@ export function TerrainBrush({
         firstTexture = renderTexture
       }
 
-      tex[id] = renderTexture
-
       const filter = new Filter(undefined, fragShader, {
         sample: Texture.from(fill.path)
       })
       filter.resolution = 2
-      filters[id] = filter
+      fillTextures[id] = { filter, texture: renderTexture }
     }
 
     // There must be a better way to do this but I can't figure it out. Fill the default
@@ -144,8 +100,7 @@ export function TerrainBrush({
     const g = new Graphics().beginFill(0xffffff).drawRect(0, 0, width, height).endFill()
     app.renderer.render(g, { renderTexture: firstTexture, blit: true })
 
-    setCurrTex(tex)
-    setFilters(filters)
+    setFillTextures(fillTextures)
   }, [app])
 
   // Update our render texture with the batch of circles drawn since the last save.
@@ -278,7 +233,7 @@ export function TerrainBrush({
             height,
             fills: mapState.background.fills
           })
-          pushUndo(new TerrainUndoCommand(prevTex, currTex, setCurrTex))
+          pushUndo(new TerrainUndoCommand(prevTex, currTex, setFillTextures))
         }}
         zIndex={-9999}
       />
@@ -345,9 +300,9 @@ export function TerrainBrush({
 
 class TerrainUndoCommand implements UndoCommand {
   constructor(
-    private prevTex: Record<string, RenderTexture>,
-    private currTex: Record<string, RenderTexture>,
-    private setCurrTex: (tex: Record<string, RenderTexture>) => void
+    private prevTex: Record<string, Partial<FillTexture>>,
+    private currTex: Record<string, Partial<FillTexture>>,
+    private setCurrTex: (tex: Record<string, Partial<FillTexture>>) => void
   ) {}
 
   undo() {
@@ -376,7 +331,7 @@ function renderUndoTextures({
   width,
   height,
   app
-}: RenderUndoTexturesArgs): Record<string, RenderTexture> {
+}: RenderUndoTexturesArgs): Record<string, Partial<FillTexture>> {
   const texMap = {}
   for (const [id, { texture }] of Object.entries(fills)) {
     const renderTexture = RenderTexture.create({
@@ -391,7 +346,7 @@ function renderUndoTextures({
       blit: true
     })
 
-    texMap[id] = renderTexture
+    texMap[id] = { texture: renderTexture }
   }
 
   return texMap

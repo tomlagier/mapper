@@ -3,7 +3,7 @@ import { TOOLS, TOOL } from '../utils/tools'
 import { TerrainBrush } from './TerrainBrush'
 import { useUndo } from '@renderer/utils/undo'
 import { useEffect, useState } from 'react'
-import { MapState, UiState } from '@renderer/types/state'
+import { FillTexture, MapState, UiState } from '@renderer/types/state'
 import { Texture } from 'pixi.js'
 import { STRATAS } from '@renderer/types/stratas'
 
@@ -17,10 +17,10 @@ import { STRATAS } from '@renderer/types/stratas'
 interface PixiCanvasProps {
   uiState: UiState
   mapState: MapState
-  setMapState: (mapState: MapState) => void
+  setFillTextures: (fillTextures: Record<string, Partial<FillTexture>>) => void
 }
 
-export function PixiCanvas({ uiState, mapState, setMapState }: PixiCanvasProps) {
+export function PixiCanvas({ uiState, mapState, setFillTextures }: PixiCanvasProps) {
   const width = 512
   const height = 512
 
@@ -39,7 +39,7 @@ export function PixiCanvas({ uiState, mapState, setMapState }: PixiCanvasProps) 
             setCursor={setCursor}
             pushUndo={push}
             mapState={mapState}
-            setMapState={setMapState}
+            setFillTextures={setFillTextures}
             activeFill={uiState.activeFill}
           />
         )}
