@@ -138,6 +138,19 @@ export function TerrainBrush({
   // circles between ticks of pointermove. This tracks that state.
   const [lastCircleSpot, setLastCircleSpot] = useState<Point>()
   const paintInterval = 5
+
+  // Callback for undo/redo that clones the undo/redo state and sets it as the current texture state
+  // We clone b/c otherwise we draw on the textures in the undo/redo stack which leads to incorrect
+  // behavior when redoing then drawing then undoing & redoing again.
+  const cloneAndSetTextures = (fillTextures: Record<string, Partial<FillTexture>>) => {
+    const nextTextures = renderUndoTextures({
+      app,
+      width,
+      height,
+      fills: fillTextures
+    })
+    setFillTextures(nextTextures)
+  }
   return (
     <>
       {/** This container tracks the pointer events used to paint and stop painting. */}
@@ -233,7 +246,7 @@ export function TerrainBrush({
             height,
             fills: mapState.background.fills
           })
-          pushUndo(new TerrainUndoCommand(prevTex, currTex, setFillTextures))
+          pushUndo(new TerrainUndoCommand(prevTex, currTex, cloneAndSetTextures))
         }}
         zIndex={-9999}
       />
@@ -321,7 +334,7 @@ class TerrainUndoCommand implements UndoCommand {
 // Given the current fills, creates a map of fill ID to RenderTexture that can be used to undo/redo
 // the current canvas state.
 interface RenderUndoTexturesArgs {
-  fills: Record<string, FillTexture>
+  fills: Record<string, Partial<FillTexture>>
   width: number
   height: number
   app: Application
