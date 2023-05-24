@@ -139,7 +139,7 @@ export function TerrainBrush({
   const [lastCircleSpot, setLastCircleSpot] = useState<Point>()
   const paintInterval = 5
 
-  // Callback for undo/redo that clones the undo/redo state and sets it as the current texture state
+  // Callback for undo/redo that clones the undo/redo state and sets it as the current texture state.
   // We clone b/c otherwise we draw on the textures in the undo/redo stack which leads to incorrect
   // behavior when redoing then drawing then undoing & redoing again.
   const cloneAndSetTextures = (fillTextures: Record<string, Partial<FillTexture>>) => {
@@ -153,6 +153,65 @@ export function TerrainBrush({
   }
   return (
     <>
+      {/**
+       * Container that contains our inverse circles, i.e. the black circles we paint
+       * on all non-active texture layers */}
+      <Container
+        ref={inverseContainerRef}
+        // TODO: Allow parameterization of the blur
+        // Because this is getting applied to the circles, it will get "baked in" to the render
+        // texture & can't be dynamically updated for past painted things. If we want to sharpen
+        // existing edges, we need to play with the alpha cutoffs that we render stuff at.
+        filters={[new BlurFilter()]}
+      >
+        {mounted &&
+          circles.map(([x, y, size], i) => (
+            <Sprite
+              x={x}
+              y={y}
+              scale={size / 10}
+              key={i}
+              tint="black"
+              alpha={0.3}
+              texture={circleTexture}
+              zIndex={-9999}
+            />
+          ))}
+      </Container>
+      {/** Container that contains the circles to paint on the active layer */}
+      <Container ref={containerRef} filters={[new BlurFilter()]}>
+        {mounted &&
+          circles.map(([x, y, size], i) => (
+            <Sprite
+              x={x}
+              y={y}
+              scale={size / 10}
+              key={i}
+              tint="white"
+              alpha={0.3}
+              texture={circleTexture}
+              zIndex={-9999}
+            />
+          ))}
+      </Container>
+      {Object.entries(mapState.background.fills).map(([id, fill], idx) => {
+        const filters: Filter[] = []
+        if (fill.filter) filters.push(fill.filter)
+        return (
+          <Sprite
+            key={id}
+            x={0}
+            y={0}
+            width={width}
+            height={height}
+            texture={fill.texture || Texture.EMPTY}
+            eventMode="static"
+            zIndex={STRATAS.BACKGROUND}
+            // pointerdown={(e) => console.log(e)}
+            filters={filters}
+          />
+        )
+      })}
       {/** This container tracks the pointer events used to paint and stop painting. */}
       <Sprite
         eventMode="static"
@@ -250,63 +309,6 @@ export function TerrainBrush({
         }}
         zIndex={-9999}
       />
-      {/**
-       * Container that contains our inverse circles, i.e. the black circles we paint
-       * on all non-active texture layers */}
-      <Container
-        ref={inverseContainerRef}
-        // TODO: Allow parameterization of the blur
-        // Because this is getting applied to the circles, it will get "baked in" to the render
-        // texture & can't be dynamically updated for past painted things. If we want to sharpen
-        // existing edges, we need to play with the alpha cutoffs that we render stuff at.
-        filters={[new BlurFilter()]}
-      >
-        {mounted &&
-          circles.map(([x, y, size], i) => (
-            <Sprite
-              x={x}
-              y={y}
-              scale={size / 10}
-              key={i}
-              tint="black"
-              alpha={0.3}
-              texture={circleTexture}
-              zIndex={STRATAS.TOOLS}
-            />
-          ))}
-      </Container>
-      {/** Container that contains the circles to paint on the active layer */}
-      <Container ref={containerRef} filters={[new BlurFilter()]}>
-        {mounted &&
-          circles.map(([x, y, size], i) => (
-            <Sprite
-              x={x}
-              y={y}
-              scale={size / 10}
-              key={i}
-              tint="white"
-              alpha={0.3}
-              texture={circleTexture}
-              zIndex={STRATAS.TOOLS}
-            />
-          ))}
-      </Container>
-
-      {Object.entries(mapState.background.fills).map(([id, fill], idx) => {
-        const filters: Filter[] = []
-        if (fill.filter) filters.push(fill.filter)
-        return (
-          <Sprite
-            key={id}
-            x={0}
-            y={0}
-            width={width}
-            height={height}
-            texture={fill.texture || Texture.EMPTY}
-            filters={filters}
-          />
-        )
-      })}
     </>
   )
 }

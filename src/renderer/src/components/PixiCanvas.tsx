@@ -2,10 +2,11 @@ import { Sprite, Stage } from '@pixi/react'
 import { TOOLS, TOOL } from '../utils/tools'
 import { TerrainBrush } from './TerrainBrush'
 import { useUndo } from '@renderer/utils/undo'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FillTexture, MapState, UiState } from '@renderer/types/state'
 import { Texture } from 'pixi.js'
 import { STRATAS } from '@renderer/types/stratas'
+import { PixiViewport } from './Viewport'
 
 // Basic algorithm for brush:
 // - Maintain mapping of color to texture
@@ -27,28 +28,45 @@ export function PixiCanvas({ uiState, mapState, setFillTextures }: PixiCanvasPro
   // TODO: Handle viewport
   const [cursor, setCursor] = useState('default')
   const { push } = useUndo()
+  // get the actual viewport instance
+  const viewportRef = useRef()
 
   return (
     <div style={{ cursor, width: '100%', height: '100%' }}>
       <Stage width={width} height={height} options={{ antialias: true, resolution: 2 }}>
         {/** Background strata */}
-        {uiState.activeTool === TOOLS.TERRAIN_BRUSH && (
-          <TerrainBrush
+        <PixiViewport
+          ref={viewportRef}
+          screenWidth={width}
+          screenHeight={height}
+          worldWidth={width}
+          worldHeight={height}
+        >
+          {/* <Sprite
             width={width}
             height={height}
-            setCursor={setCursor}
-            pushUndo={push}
-            mapState={mapState}
-            setFillTextures={setFillTextures}
-            activeFill={uiState.activeFill}
-          />
-        )}
+            texture={Texture.WHITE}
+            eventMode="static"
+            pointerdown={(e) => console.log(e)}
+          /> */}
+          {uiState.activeTool === TOOLS.TERRAIN_BRUSH && (
+            <TerrainBrush
+              width={width}
+              height={height}
+              setCursor={setCursor}
+              pushUndo={push}
+              mapState={mapState}
+              setFillTextures={setFillTextures}
+              activeFill={uiState.activeFill}
+            />
+          )}
 
-        {/** Object strata */}
+          {/** Object strata */}
 
-        {/** Tool strata */}
+          {/** Tool strata */}
 
-        {/** UI strata */}
+          {/** UI strata */}
+        </PixiViewport>
       </Stage>
     </div>
   )
