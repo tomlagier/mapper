@@ -6,15 +6,15 @@ import { TOOLS } from './utils/tools'
 import { MapState, UiState } from './types/state'
 import { DEFAULT_FILLS } from './utils/fills'
 import { useAppState } from './hooks/useAppState'
+import { AppSkeleton } from './components/AppSkeleton'
 
 function App(): JSX.Element {
   const { mapState, uiState, setUiState, setFillTextures } = useAppState()
 
   return (
     <MantineProvider>
-      <AppShell
-        padding="0px"
-        navbar={
+      <AppSkeleton
+        sidebar={
           <Navbar width={{ base: 300 }} p="md">
             <NavLink label="Brush" icon={<BarberBrush />} />
             {Object.keys(mapState.background.fills).map((id) => (
@@ -33,15 +33,9 @@ function App(): JSX.Element {
             {/* Header content */}
           </Header>
         }
-        styles={(theme) => ({
-          main: {
-            backgroundColor:
-              theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0]
-          }
-        })}
       >
         <PixiCanvas uiState={uiState} mapState={mapState} setFillTextures={setFillTextures} />
-      </AppShell>
+      </AppSkeleton>
     </MantineProvider>
   )
 }
