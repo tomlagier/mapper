@@ -123,12 +123,12 @@ export function TerrainBrush({
     setCircles(() => [])
   }
 
-  // Periodically save out the circles to texture while dragging.
-  const limit = 25
+  // Save circles to texture when added
+  // const limit = 25
   useEffect(() => {
-    if (circles.length < limit) return
+    if (circles.length === 0) return
     saveTexture()
-  }, [circles])
+  }, [circles.length])
 
   // Refs for the container we use to render out the circles
   const containerRef = useRef(null)
@@ -292,8 +292,6 @@ export function TerrainBrush({
 
           setCircles((c) => [...c, ...newCircles])
           setLastCircleSpot(() => ({ ...e.global }))
-
-          await saveTexture()
         }}
         pointerup={async () => {
           // Complete our interpolation, save any outstanding circles to textures, then push
