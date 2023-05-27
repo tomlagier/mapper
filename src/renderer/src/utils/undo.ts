@@ -30,21 +30,13 @@ export function useUndo() {
     setRedoStack((s) => [])
   }
 
+  // Wire up undo stack state to IPC functions via menu
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.code === 'KeyZ' && e.metaKey) {
-        if (e.shiftKey) {
-          redo()
-        } else {
-          undo()
-        }
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-
+    window.api.onUndo(undo)
+    window.api.onRedo(redo)
     return () => {
-      document.removeEventListener('keydown', handleKeyDown)
+      window.api.clearUndo()
+      window.api.clearRedo()
     }
   }, [undoStack, redoStack])
 

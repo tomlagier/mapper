@@ -3,7 +3,12 @@ import { ElectronAPI } from '@electron-toolkit/preload'
 declare global {
   interface Window {
     electron: ElectronAPI
-    api: unknown
+    api: {
+      onUndo: (cb: VoidFunction) => void
+      onRedo: (cb: VoidFunction) => void
+      clearUndo: () => void
+      clearRedo: () => void
+    }
   }
 }
 

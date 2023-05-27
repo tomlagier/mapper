@@ -1,21 +1,43 @@
-import { app, shell, BrowserWindow } from 'electron'
+import { app, shell, BrowserWindow, Menu, globalShortcut } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
-function createWindow(): void {
+function createWindow(): BrowserWindow {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 900,
     height: 670,
     show: false,
-    autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
     }
   })
+
+  // Set up menu
+  const menu = Menu.buildFromTemplate([
+    {
+      label: 'Edit',
+      submenu: [
+        {
+          click: () => {
+            mainWindow.webContents.send('undo')
+          },
+          label: 'Undo'
+        },
+        {
+          click: () => {
+            mainWindow.webContents.send('redo')
+          },
+          label: 'Redo'
+        }
+      ]
+    }
+  ])
+
+  mainWindow.setMenu(menu)
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
@@ -33,6 +55,8 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  return mainWindow
 }
 
 // This method will be called when Electron has finished
@@ -49,12 +73,21 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  createWindow()
+  const mainWindow = createWindow()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  })
+
+  // Global keybinds
+  globalShortcut.register('CommandOrControl+Z', () => {
+    mainWindow.webContents.send('undo')
+  })
+
+  globalShortcut.register('CommandOrControl+Shift+Z', () => {
+    mainWindow.webContents.send('redo')
   })
 })
 
@@ -66,6 +99,3 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
-
-// In this file you can include the rest of your app"s specific main process
-// code. You can also put them in separate files and require them here.

@@ -32,11 +32,11 @@ const PixiViewportComponent = PixiComponent('Viewport', {
         // ignoreKeyToPressOnTouch: false,  // ignore keyToPress for touch events
         // lineHeight: 20,                  // scaling factor for non-DOM_DELTA_PIXEL scrolling events (used for firefox mouse scrolling)
       })
-      .decelerate({
-        // friction: 0.95,              // percent to decelerate after movement
-        // bounce: 0.8,                 // percent to decelerate when past boundaries (only applicable when viewport.bounce() is active)
-        // minSpeed: 0.01,              // minimum velocity before stopping/reversing acceleration
-      })
+      // .decelerate({
+      //   // friction: 0.95,              // percent to decelerate after movement
+      //   // bounce: 0.8,                 // percent to decelerate when past boundaries (only applicable when viewport.bounce() is active)
+      //   // minSpeed: 0.01,              // minimum velocity before stopping/reversing acceleration
+      // })
       .pinch({
         // noDrag: false,               // disable two-finger dragging
         // percent: 1,                  // percent to modify pinch speed
