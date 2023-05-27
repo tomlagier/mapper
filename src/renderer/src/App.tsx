@@ -1,10 +1,6 @@
 import { PixiCanvas } from './components/PixiCanvas'
-import { AppShell, Button, Header, MantineProvider, NavLink, Navbar } from '@mantine/core'
-import { useEffect, useState } from 'react'
+import { Button, Header, MantineProvider, NavLink, Navbar } from '@mantine/core'
 import { BarberBrush } from '@icon-park/react'
-import { TOOLS } from './utils/tools'
-import { MapState, UiState } from './types/state'
-import { DEFAULT_FILLS } from './utils/fills'
 import { useAppState } from './hooks/useAppState'
 import { AppSkeleton } from './components/AppSkeleton'
 
