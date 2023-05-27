@@ -7,6 +7,7 @@ import { FillTexture, MapState, UiState } from '@renderer/types/state'
 import { Texture } from 'pixi.js'
 import { STRATAS } from '@renderer/types/stratas'
 import { PixiViewport } from './Viewport'
+import { Viewport } from 'pixi-viewport'
 
 // Basic algorithm for brush:
 // - Maintain mapping of color to texture
@@ -25,7 +26,7 @@ export function PixiCanvas({ uiState, mapState, setFillTextures }: PixiCanvasPro
   const [cursor, setCursor] = useState('default')
   const { push } = useUndo()
   // Get the viewport instance
-  const viewportRef = useRef()
+  const viewportRef = useRef<Viewport>()
 
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -65,6 +66,7 @@ export function PixiCanvas({ uiState, mapState, setFillTextures }: PixiCanvasPro
                 mapState={mapState}
                 setFillTextures={setFillTextures}
                 activeFill={uiState.activeFill}
+                viewport={viewportRef.current!}
               />
             )}
 

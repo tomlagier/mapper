@@ -16,6 +16,7 @@ import { UndoCommand } from '@renderer/utils/undo'
 import { FillTexture, MapState } from '@renderer/types/state'
 import { STRATAS } from '@renderer/types/stratas'
 import { Point, getNormalizedMagnitude, interpolate } from '@renderer/utils/interpolate'
+import { Viewport } from 'pixi-viewport'
 
 interface TerrainBrushProps {
   width: number
@@ -31,6 +32,8 @@ interface TerrainBrushProps {
 
   activeFill: string
   setFillTextures: (textures: Record<string, Partial<FillTexture>>) => void
+
+  viewport: Viewport
 }
 
 export function TerrainBrush({
@@ -40,10 +43,11 @@ export function TerrainBrush({
   pushUndo,
   mapState,
   activeFill,
-  setFillTextures
+  setFillTextures,
+  viewport
 }: TerrainBrushProps) {
   // Eventually these will be controlled by the UI layer
-  const size = 25
+  const size = 1
   const splatterRadius = 100
   const splatterAmount = 15
 
@@ -137,7 +141,7 @@ export function TerrainBrush({
   // Because the sample pointermove sample rate is kinda low, we use interpolation to render
   // circles between ticks of pointermove. This tracks that state.
   const [lastCircleSpot, setLastCircleSpot] = useState<Point>()
-  const paintInterval = 5
+  const paintInterval = 5 * viewport.scale.x
 
   // Callback for undo/redo that clones the undo/redo state and sets it as the current texture state.
   // We clone b/c otherwise we draw on the textures in the undo/redo stack which leads to incorrect
@@ -165,34 +169,38 @@ export function TerrainBrush({
         filters={[new BlurFilter()]}
       >
         {mounted &&
-          circles.map(([x, y, size], i) => (
-            <Sprite
-              x={x}
-              y={y}
-              scale={size / 10}
-              key={i}
-              tint="black"
-              alpha={0.3}
-              texture={circleTexture}
-              zIndex={-9999}
-            />
-          ))}
+          circles.map(([x, y, size], i) => {
+            return (
+              <Sprite
+                x={x}
+                y={y}
+                scale={size}
+                key={i}
+                tint="black"
+                alpha={0.3}
+                texture={circleTexture}
+                zIndex={-9999}
+              />
+            )
+          })}
       </Container>
       {/** Container that contains the circles to paint on the active layer */}
       <Container ref={containerRef} filters={[new BlurFilter()]}>
         {mounted &&
-          circles.map(([x, y, size], i) => (
-            <Sprite
-              x={x}
-              y={y}
-              scale={size / 10}
-              key={i}
-              tint="white"
-              alpha={0.3}
-              texture={circleTexture}
-              zIndex={-9999}
-            />
-          ))}
+          circles.map(([x, y, size], i) => {
+            return (
+              <Sprite
+                x={x}
+                y={y}
+                scale={size}
+                key={i}
+                tint="white"
+                alpha={0.3}
+                texture={circleTexture}
+                zIndex={-9999}
+              />
+            )
+          })}
       </Container>
       {Object.entries(mapState.background.fills).map(([id, fill], idx) => {
         const filters: Filter[] = []
@@ -257,7 +265,8 @@ export function TerrainBrush({
               y,
               splatterRadius,
               splatterAmount,
-              size
+              size,
+              viewport
             })
 
             _c.push(...newCircles)
@@ -287,7 +296,8 @@ export function TerrainBrush({
             y: e.global.y,
             splatterRadius,
             splatterAmount,
-            size
+            size,
+            viewport
           })
 
           setCircles((c) => [...c, ...newCircles])

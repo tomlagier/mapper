@@ -4,7 +4,13 @@
 // which just shows the opacity as it is.
 // I'm not sure if I can achieve a similar effect with Pixi - I'd need to maybe blur the edges of the circles?
 // But that feels likely to be prohibitively expensive
-export function getSplatterCircles({ splatterAmount, splatterRadius, x, y, size }) {
+export function getSplatterCircles({ splatterAmount, splatterRadius, x, y, size, viewport }) {
+  // Translate X,Y to world space
+  const { x: worldX, y: worldY } = viewport.toWorld(x, y)
+
+  // Translate splatterRadius to world scale
+  const worldSplatter = splatterRadius * viewport.scale.x
+
   let dx, dy, r, s, t
   const circles: Array<Array<number>> = []
 
@@ -16,7 +22,8 @@ export function getSplatterCircles({ splatterAmount, splatterRadius, x, y, size 
     // TODO: I want the circles to follow a different curve as they get further away from the center
     // It should be big closer and much smaller further away
     s = 1 - Math.sqrt(dx * dx + dy * dy) / splatterRadius
-    circles.push([x + dx, y + dy, size * s])
+
+    circles.push([worldX + dx, worldY + dy, size])
   }
 
   return circles

@@ -58,23 +58,24 @@ const PixiViewportComponent = PixiComponent('Viewport', {
       })
       .moveCenter(worldWidth / 2, worldHeight / 2)
 
-    viewport.on('moved', (e) => {
-      if (viewport.position.x < 0) {
-        viewport.position.x = 0
-      }
+    // If we decide to re-add clamping, here's roughly how it could work
+    // viewport.on('moved', (e) => {
+    //   if (viewport.position.x < 0) {
+    //     viewport.position.x = 0
+    //   }
 
-      if (viewport.position.y < 0) {
-        viewport.position.y = 0
-      }
+    //   if (viewport.position.y < 0) {
+    //     viewport.position.y = 0
+    //   }
 
-      if (viewport.position.x + viewport.width > screenWidth) {
-        viewport.position.x = screenWidth - viewport.width
-      }
+    //   if (viewport.position.x + viewport.width > screenWidth) {
+    //     viewport.position.x = screenWidth - viewport.width
+    //   }
 
-      if (viewport.position.y + viewport.height > screenHeight) {
-        viewport.position.y = screenHeight - viewport.height
-      }
-    })
+    //   if (viewport.position.y + viewport.height > screenHeight) {
+    //     viewport.position.y = screenHeight - viewport.height
+    //   }
+    // })
 
     return viewport
   },
