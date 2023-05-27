@@ -7,8 +7,6 @@ import { Ref, forwardRef } from 'react'
 // we share the ticker and interaction from app
 const PixiViewportComponent = PixiComponent('Viewport', {
   create({ app, plugins, screenWidth, screenHeight, worldWidth, worldHeight, ...rest }) {
-    console.log(screenWidth, screenHeight, worldWidth, worldHeight)
-
     const viewport = new Viewport({
       ticker: app.ticker,
       events: app.renderer.events,
@@ -59,11 +57,14 @@ const PixiViewportComponent = PixiComponent('Viewport', {
         // axis: 'all',                 // axis to zoom
       })
       .moveCenter(worldWidth / 2, worldHeight / 2)
-    // .clamp({
-    //   // direction: 'all'
-    //   // underflow: 'none'
-    //   // direction: 'x'
-    // })
+      .clamp({
+        // This math makes 0 sense but it's from trial & error
+        left: worldWidth - screenWidth,
+        right: screenWidth,
+        top: worldHeight - screenHeight,
+        bottom: screenHeight,
+        underflow: 'none'
+      })
 
     return viewport
   },
