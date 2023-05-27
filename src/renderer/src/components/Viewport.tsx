@@ -6,11 +6,17 @@ import { Ref, forwardRef } from 'react'
 
 // we share the ticker and interaction from app
 const PixiViewportComponent = PixiComponent('Viewport', {
-  create({ app, plugins, ...rest }) {
+  create({ app, plugins, screenWidth, screenHeight, worldWidth, worldHeight, ...rest }) {
+    console.log(screenWidth, screenHeight, worldWidth, worldHeight)
+
     const viewport = new Viewport({
-      // ticker: app.ticker,
+      ticker: app.ticker,
       events: app.renderer.events,
       // stopPropagation: true,
+      screenWidth,
+      screenHeight,
+      worldWidth,
+      worldHeight,
       ...rest
     })
 
@@ -52,6 +58,12 @@ const PixiViewportComponent = PixiComponent('Viewport', {
         // lineHeight: 20,	            // scaling factor for non-DOM_DELTA_PIXEL scrolling events
         // axis: 'all',                 // axis to zoom
       })
+      .moveCenter(worldWidth / 2, worldHeight / 2)
+    // .clamp({
+    //   // direction: 'all'
+    //   // underflow: 'none'
+    //   // direction: 'x'
+    // })
 
     return viewport
   },

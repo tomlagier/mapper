@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { getModKey } from './modkey'
 
 export interface UndoCommand {
   undo(): void
@@ -32,11 +33,21 @@ export function useUndo() {
 
   // Wire up undo stack state to IPC functions via menu
   useEffect(() => {
-    window.api.onUndo(undo)
-    window.api.onRedo(redo)
+    const handleKeyDown = (e) => {
+      const modKey = getModKey()
+      if (e.code === 'KeyZ' && e[modKey]) {
+        if (e.shiftKey) {
+          redo()
+        } else {
+          undo()
+        }
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+
     return () => {
-      window.api.clearUndo()
-      window.api.clearRedo()
+      document.removeEventListener('keydown', handleKeyDown)
     }
   }, [undoStack, redoStack])
 

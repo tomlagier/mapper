@@ -6,7 +6,8 @@ const api = {
   onUndo: (cb) => ipcRenderer.on('undo', cb),
   onRedo: (cb) => ipcRenderer.on('redo', cb),
   clearUndo: () => ipcRenderer.removeAllListeners('undo'),
-  clearRedo: () => ipcRenderer.removeAllListeners('redo')
+  clearRedo: () => ipcRenderer.removeAllListeners('redo'),
+  platform: process.platform
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

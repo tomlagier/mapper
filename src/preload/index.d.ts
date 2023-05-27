@@ -8,6 +8,7 @@ declare global {
       onRedo: (cb: VoidFunction) => void
       clearUndo: () => void
       clearRedo: () => void
+      platform: 'win32' | 'darwin'
     }
   }
 }

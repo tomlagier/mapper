@@ -9,6 +9,7 @@ function createWindow(): BrowserWindow {
     width: 900,
     height: 670,
     show: false,
+    autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -17,27 +18,27 @@ function createWindow(): BrowserWindow {
   })
 
   // Set up menu
-  const menu = Menu.buildFromTemplate([
-    {
-      label: 'Edit',
-      submenu: [
-        {
-          click: () => {
-            mainWindow.webContents.send('undo')
-          },
-          label: 'Undo'
-        },
-        {
-          click: () => {
-            mainWindow.webContents.send('redo')
-          },
-          label: 'Redo'
-        }
-      ]
-    }
-  ])
+  // const menu = Menu.buildFromTemplate([
+  //   {
+  //     label: 'Edit',
+  //     submenu: [
+  //       {
+  //         click: () => {
+  //           mainWindow.webContents.send('undo')
+  //         },
+  //         label: 'Undo'
+  //       },
+  //       {
+  //         click: () => {
+  //           mainWindow.webContents.send('redo')
+  //         },
+  //         label: 'Redo'
+  //       }
+  //     ]
+  //   }
+  // ])
 
-  mainWindow.setMenu(menu)
+  // mainWindow.setMenu(menu)
 
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
@@ -82,13 +83,13 @@ app.whenReady().then(() => {
   })
 
   // Global keybinds
-  globalShortcut.register('CommandOrControl+Z', () => {
-    mainWindow.webContents.send('undo')
-  })
+  // globalShortcut.register('CommandOrControl+Z', () => {
+  //   mainWindow.webContents.send('undo')
+  // })
 
-  globalShortcut.register('CommandOrControl+Shift+Z', () => {
-    mainWindow.webContents.send('redo')
-  })
+  // globalShortcut.register('CommandOrControl+Shift+Z', () => {
+  //   mainWindow.webContents.send('redo')
+  // })
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common
