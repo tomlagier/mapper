@@ -31,22 +31,41 @@ export function PixiCanvas({ uiState, mapState, setFillTextures }: PixiCanvasPro
   const containerRef = useRef<HTMLDivElement>(null)
 
   const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
+  const [stageSize, setStageSize] = useState<DOMRect | null | undefined>(null)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
-  const stageWidth = containerRef.current?.getBoundingClientRect().width
-  const stageHeight = containerRef.current?.getBoundingClientRect().height
+  useEffect(() => {
+    if (!mounted) return
+
+    setStageSize(containerRef.current?.getBoundingClientRect())
+
+    const handleResize = () => {
+      setStageSize(containerRef.current?.getBoundingClientRect())
+    }
+
+    window.addEventListener('resize', handleResize)
+
+    return () => window.removeEventListener('resize', handleResize)
+  }, [mounted])
+
   const worldWidth = 512
   const worldHeight = 512
 
   return (
     <div style={{ cursor, width: '100%', height: '100%', overflow: 'hidden' }} ref={containerRef}>
-      {mounted && (
-        <Stage width={stageWidth} height={stageHeight} options={{ antialias: true, resolution: 2 }}>
+      {mounted && stageSize && (
+        <Stage
+          width={stageSize.width}
+          height={stageSize.height}
+          options={{ antialias: true, resolution: 2 }}
+        >
           {/** Background strata */}
           <PixiViewport
             ref={viewportRef}
-            screenWidth={stageWidth}
-            screenHeight={stageHeight}
+            screenWidth={stageSize.width}
+            screenHeight={stageSize.height}
             worldWidth={worldWidth}
             worldHeight={worldHeight}
           >
