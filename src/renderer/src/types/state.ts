@@ -21,6 +21,8 @@ export interface FillTexture {
   texture?: RenderTexture
   // Filter used to display the texture by mapping the bitmap to the till image
   filter?: Filter
+  // Size of the fill texture
+  size: number
 }
 
 export interface UiState {

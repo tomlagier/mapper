@@ -36,6 +36,8 @@ interface TerrainBrushProps {
   viewport: Viewport
 }
 
+const blurFilter = new BlurFilter()
+
 export function TerrainBrush({
   width,
   height,
@@ -88,14 +90,18 @@ export function TerrainBrush({
       })
 
       // TODO: Pull the first texture & only do the paint if it's a new canvas
-      if (id === 'grass') {
+      if (id === 'stones') {
         firstTexture = renderTexture
       }
 
       const filter = new Filter(undefined, fragShader, {
-        sample: Texture.from(fill.path)
+        sample: Texture.from(fill.path),
+        scale: width / fill.size,
+        dimensions: [width, height]
       })
+
       filter.resolution = 2
+      filter.autoFit = false
       fillTextures[id] = { filter, texture: renderTexture }
     }
 
@@ -141,7 +147,7 @@ export function TerrainBrush({
   // Because the sample pointermove sample rate is kinda low, we use interpolation to render
   // circles between ticks of pointermove. This tracks that state.
   const [lastCircleSpot, setLastCircleSpot] = useState<Point>()
-  const paintInterval = 5 * viewport.scale.x
+  const paintInterval = 5 * (viewport?.scale.x || 1)
 
   // Callback for undo/redo that clones the undo/redo state and sets it as the current texture state.
   // We clone b/c otherwise we draw on the textures in the undo/redo stack which leads to incorrect
@@ -166,7 +172,7 @@ export function TerrainBrush({
         // Because this is getting applied to the circles, it will get "baked in" to the render
         // texture & can't be dynamically updated for past painted things. If we want to sharpen
         // existing edges, we need to play with the alpha cutoffs that we render stuff at.
-        filters={[new BlurFilter()]}
+        filters={[blurFilter]}
       >
         {mounted &&
           circles.map(([x, y, size], i) => {
@@ -185,7 +191,7 @@ export function TerrainBrush({
           })}
       </Container>
       {/** Container that contains the circles to paint on the active layer */}
-      <Container ref={containerRef} filters={[new BlurFilter()]}>
+      <Container ref={containerRef} filters={[blurFilter]}>
         {mounted &&
           circles.map(([x, y, size], i) => {
             return (
@@ -383,6 +389,10 @@ varying vec4 vColor;
 
 uniform sampler2D uSampler;
 uniform sampler2D sample;
+uniform float scale;
+uniform vec4 filterArea;
+uniform vec4 filterClamp;
+uniform vec2 dimensions;
 
 void main(void)
 {
@@ -391,8 +401,7 @@ void main(void)
   // Ignore full transparent pixels
   if(sourcePixel.a == 0.0) discard;
 
-  // TODO: Support arbitrary image size
-  vec2 sampleCoords = fract(vTextureCoord * 8.0);
+  vec2 sampleCoords = fract(vTextureCoord * scale);
   vec4 samplePixel = texture2D(sample, sampleCoords);
 
   vec4 result = vec4(samplePixel.rgb * sourcePixel.r * sourcePixel.a, sourcePixel.r * sourcePixel.a);

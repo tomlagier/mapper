@@ -5,15 +5,19 @@ import blue from '@resources/backgroundTextures/blue.webp'
 
 export const DEFAULT_FILLS = {
   grass: {
-    path: grass
+    path: grass,
+    size: 64
   },
   stones: {
-    path: stones
+    path: stones,
+    size: 32
   },
   blue: {
-    path: blue
+    path: blue,
+    size: 4
   },
   red: {
-    path: red
+    path: red,
+    size: 4
   }
 }
