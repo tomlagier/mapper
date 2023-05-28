@@ -221,7 +221,6 @@ export function TerrainBrush({
             texture={fill.texture || Texture.EMPTY}
             eventMode="static"
             zIndex={STRATAS.BACKGROUND}
-            // pointerdown={(e) => console.log(e)}
             filters={filters}
           />
         )
@@ -291,11 +290,11 @@ export function TerrainBrush({
           }
         }}
         pointerdown={async (e) => {
-          // TODO: This probably should work when we drag from offscreen as well b/c currently
-          // that breaks the undo stack.
-
           // Push the current terrain textures to the undo stack
           setPrevTex()
+          setLastCircleSpot(() => ({ ...e.global }))
+
+          if (e.button !== 1) return
 
           const newCircles = getSplatterCircles({
             x: e.global.x,
@@ -307,7 +306,6 @@ export function TerrainBrush({
           })
 
           setCircles((c) => [...c, ...newCircles])
-          setLastCircleSpot(() => ({ ...e.global }))
         }}
         pointerup={async () => {
           // Complete our interpolation, save any outstanding circles to textures, then push
@@ -390,9 +388,6 @@ varying vec4 vColor;
 uniform sampler2D uSampler;
 uniform sampler2D sample;
 uniform float scale;
-uniform vec4 filterArea;
-uniform vec4 filterClamp;
-uniform vec2 dimensions;
 
 void main(void)
 {
