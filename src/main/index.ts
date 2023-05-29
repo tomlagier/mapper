@@ -18,25 +18,7 @@ function createWindow(): BrowserWindow {
   })
 
   // Set up menu
-  // const menu = Menu.buildFromTemplate([
-  //   {
-  //     label: 'Edit',
-  //     submenu: [
-  //       {
-  //         click: () => {
-  //           mainWindow.webContents.send('undo')
-  //         },
-  //         label: 'Undo'
-  //       },
-  //       {
-  //         click: () => {
-  //           mainWindow.webContents.send('redo')
-  //         },
-  //         label: 'Redo'
-  //       }
-  //     ]
-  //   }
-  // ])
+  // Deprecated b/c we do menu handling in frontend
 
   // mainWindow.setMenu(menu)
 

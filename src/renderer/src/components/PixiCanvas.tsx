@@ -1,13 +1,13 @@
 import { Sprite, Stage } from '@pixi/react'
 import { TOOLS, TOOL } from '../utils/tools'
 import { TerrainBrush } from './TerrainBrush'
-import { useUndo } from '@renderer/utils/undo'
 import { useEffect, useRef, useState } from 'react'
 import { FillTexture, MapState, UiState } from '@renderer/types/state'
 import { Texture } from 'pixi.js'
 import { STRATAS } from '@renderer/types/stratas'
 import { PixiViewport } from './Viewport'
 import { Viewport } from 'pixi-viewport'
+import { UndoCommand } from '@renderer/utils/undo'
 
 // Basic algorithm for brush:
 // - Maintain mapping of color to texture
@@ -20,11 +20,12 @@ interface PixiCanvasProps {
   uiState: UiState
   mapState: MapState
   setFillTextures: (fillTextures: Record<string, Partial<FillTexture>>) => void
+  pushUndo: (undo: UndoCommand) => void
 }
 
-export function PixiCanvas({ uiState, mapState, setFillTextures }: PixiCanvasProps) {
+export function PixiCanvas({ uiState, mapState, setFillTextures, pushUndo }: PixiCanvasProps) {
   const [cursor, setCursor] = useState('default')
-  const { push } = useUndo()
+
   // Get the viewport instance
   const viewportRef = useRef<Viewport>()
 
@@ -81,7 +82,7 @@ export function PixiCanvas({ uiState, mapState, setFillTextures }: PixiCanvasPro
                 width={worldWidth}
                 height={worldWidth}
                 setCursor={setCursor}
-                pushUndo={push}
+                pushUndo={pushUndo}
                 mapState={mapState}
                 setFillTextures={setFillTextures}
                 activeFill={uiState.activeFill}

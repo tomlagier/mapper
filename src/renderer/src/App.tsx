@@ -3,9 +3,12 @@ import { Button, Header, MantineProvider, NavLink, Navbar } from '@mantine/core'
 import { BarberBrush } from '@icon-park/react'
 import { useAppState } from './hooks/useAppState'
 import { AppSkeleton } from './components/AppSkeleton'
+import { HeaderMenu } from './components/HeaderMenu'
+import { useUndo } from '@renderer/utils/undo'
 
 function App(): JSX.Element {
   const { mapState, uiState, setUiState, setFillTextures } = useAppState()
+  const { push, undo, redo } = useUndo()
 
   return (
     <MantineProvider>
@@ -24,13 +27,14 @@ function App(): JSX.Element {
             ))}
           </Navbar>
         }
-        header={
-          <Header height={60} p="md">
-            {/* Header content */}
-          </Header>
-        }
+        header={<HeaderMenu undo={undo} redo={redo} />}
       >
-        <PixiCanvas uiState={uiState} mapState={mapState} setFillTextures={setFillTextures} />
+        <PixiCanvas
+          uiState={uiState}
+          mapState={mapState}
+          setFillTextures={setFillTextures}
+          pushUndo={push}
+        />
       </AppSkeleton>
     </MantineProvider>
   )

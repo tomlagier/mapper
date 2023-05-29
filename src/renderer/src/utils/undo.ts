@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getModKey } from './modkey'
+import { useHotkeys } from 'react-hotkeys-hook'
 
 export interface UndoCommand {
   undo(): void
@@ -32,24 +33,9 @@ export function useUndo() {
   }
 
   // Wire up undo stack state to IPC functions via menu
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      const modKey = getModKey()
-      if (e.code === 'KeyZ' && e[modKey]) {
-        if (e.shiftKey) {
-          redo()
-        } else {
-          undo()
-        }
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [undoStack, redoStack])
+  // TODO: Move keybind handling to a single place
+  useHotkeys(`${getModKey()}+z`, () => undo(), [undoStack, redoStack])
+  useHotkeys(`${getModKey()}+shift+z`, () => redo(), [undoStack, redoStack])
 
   return {
     undo,

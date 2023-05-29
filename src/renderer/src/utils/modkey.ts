@@ -1,10 +1,10 @@
 export function getModKey() {
   switch (window.api.platform) {
     case 'win32':
-      return 'ctrlKey'
+      return 'ctrl'
     case 'darwin':
-      return 'metaKey'
+      return 'cmd'
     default:
-      return 'ctrlKey'
+      return 'ctrl'
   }
 }
