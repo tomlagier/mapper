@@ -1,20 +1,26 @@
 import { FillTexture, MapState, UiState } from '@renderer/types/state'
 import { DEFAULT_FILLS } from '@renderer/utils/fills'
 import { TOOLS } from '@renderer/utils/tools'
-import { Filter, RenderTexture } from 'pixi.js'
 import { useCallback, useState } from 'react'
+
+export type SetUiState = (cb: (state: UiState) => UiState) => void
+export type SetMapState = (cb: (state: MapState) => MapState) => void
 
 export function useAppState() {
   const [uiState, setUiState] = useState<UiState>({
     activeTool: TOOLS.TERRAIN_BRUSH,
-    activeFill: Object.keys(DEFAULT_FILLS)[0]
+    activeFill: Object.keys(DEFAULT_FILLS)[0],
+    filePath: null
   })
 
   const [mapState, setMapState] = useState<MapState>({
     background: {
       fills: DEFAULT_FILLS
+      // fills: {}
     },
-    objects: null
+    objects: null,
+    width: 512,
+    height: 512
   })
 
   const setFillTextures = useCallback(

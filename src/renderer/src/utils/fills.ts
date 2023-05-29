@@ -7,17 +7,17 @@ export const DEFAULT_FILLS = {
   grass: {
     path: grass,
     size: 64
-  },
-  stones: {
-    path: stones,
-    size: 32
-  },
-  blue: {
-    path: blue,
-    size: 4
-  },
-  red: {
-    path: red,
-    size: 4
   }
+  // stones: {
+  //   path: stones,
+  //   size: 32
+  // },
+  // blue: {
+  //   path: blue,
+  //   size: 4
+  // },
+  // red: {
+  //   path: red,
+  //   size: 4
+  // }
 }

@@ -76,6 +76,7 @@ export function TerrainBrush({
   }
 
   // Initialize the renderTextures and filters used for each loaded fill.
+  // TODO: Only do this on map save
   useEffect(() => {
     if (!app) return
 
@@ -90,18 +91,19 @@ export function TerrainBrush({
       })
 
       // TODO: Pull the first texture & only do the paint if it's a new canvas
-      if (id === 'stones') {
+      if (id === 'grass') {
         firstTexture = renderTexture
       }
 
-      const filter = new Filter(undefined, fragShader, {
-        sample: Texture.from(fill.path),
-        scale: width / fill.size,
-        dimensions: [width, height]
-      })
+      // const filter = new Filter(undefined, fragShader, {
+      //   sample: Texture.from(fill.path),
+      //   scale: width / fill.size,
+      //   dimensions: [width, height]
+      // })
 
-      filter.resolution = 2
-      filter.autoFit = false
+      // filter.resolution = 2
+      // filter.autoFit = false
+      const filter = null
       fillTextures[id] = { filter, texture: renderTexture }
     }
 

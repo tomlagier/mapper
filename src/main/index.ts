@@ -2,6 +2,7 @@ import { app, shell, BrowserWindow, Menu, globalShortcut } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import { bindSaveEvents } from './save'
 
 function createWindow(): BrowserWindow {
   // Create the browser window.
@@ -72,6 +73,9 @@ app.whenReady().then(() => {
   // globalShortcut.register('CommandOrControl+Shift+Z', () => {
   //   mainWindow.webContents.send('redo')
   // })
+
+  // Bind IPC senders/receivers
+  bindSaveEvents(mainWindow)
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

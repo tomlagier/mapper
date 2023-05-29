@@ -5,10 +5,18 @@ import { useAppState } from './hooks/useAppState'
 import { AppSkeleton } from './components/AppSkeleton'
 import { HeaderMenu } from './components/HeaderMenu'
 import { useUndo } from '@renderer/utils/undo'
+import { useSave } from './hooks/useSave'
+import { Application } from 'pixi.js'
+import { useState } from 'react'
 
 function App(): JSX.Element {
-  const { mapState, uiState, setUiState, setFillTextures } = useAppState()
+  // State
+  const { mapState, uiState, setUiState, setMapState, setFillTextures } = useAppState()
+  // Pixi app
+  const [app, setApp] = useState<Application>()
+
   const { push, undo, redo } = useUndo()
+  const { save, saveAs, load } = useSave(setUiState, setMapState, mapState, uiState, app)
 
   return (
     <MantineProvider>
@@ -27,13 +35,14 @@ function App(): JSX.Element {
             ))}
           </Navbar>
         }
-        header={<HeaderMenu undo={undo} redo={redo} />}
+        header={<HeaderMenu undo={undo} redo={redo} save={save} saveAs={saveAs} load={load} />}
       >
         <PixiCanvas
           uiState={uiState}
           mapState={mapState}
           setFillTextures={setFillTextures}
           pushUndo={push}
+          setApp={setApp}
         />
       </AppSkeleton>
     </MantineProvider>

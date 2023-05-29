@@ -7,10 +7,10 @@ export interface MapState {
     texture?: Texture
     // Array of fill texture paths that maps to the fillMap, for serializing the texture
     fills: Record<string, FillTexture>
-    // Array of pixels, each pixel an integer that maps to the fills array, for serializing the texture
-    fillMap?: null
   }
   objects: any
+  width: number
+  height: number
 }
 
 // A user-provided texture that we use to render a fill.
@@ -28,4 +28,5 @@ export interface FillTexture {
 export interface UiState {
   activeTool: TOOL
   activeFill: string
+  filePath?: string | null
 }

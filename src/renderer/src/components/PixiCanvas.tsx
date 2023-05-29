@@ -3,7 +3,7 @@ import { TOOLS, TOOL } from '../utils/tools'
 import { TerrainBrush } from './TerrainBrush'
 import { useEffect, useRef, useState } from 'react'
 import { FillTexture, MapState, UiState } from '@renderer/types/state'
-import { Texture } from 'pixi.js'
+import { Application, Texture } from 'pixi.js'
 import { STRATAS } from '@renderer/types/stratas'
 import { PixiViewport } from './Viewport'
 import { Viewport } from 'pixi-viewport'
@@ -21,9 +21,16 @@ interface PixiCanvasProps {
   mapState: MapState
   setFillTextures: (fillTextures: Record<string, Partial<FillTexture>>) => void
   pushUndo: (undo: UndoCommand) => void
+  setApp: (app: Application) => void
 }
 
-export function PixiCanvas({ uiState, mapState, setFillTextures, pushUndo }: PixiCanvasProps) {
+export function PixiCanvas({
+  uiState,
+  mapState,
+  setFillTextures,
+  pushUndo,
+  setApp
+}: PixiCanvasProps) {
   const [cursor, setCursor] = useState('default')
 
   // Get the viewport instance
@@ -51,8 +58,8 @@ export function PixiCanvas({ uiState, mapState, setFillTextures, pushUndo }: Pix
     return () => window.removeEventListener('resize', handleResize)
   }, [mounted])
 
-  const worldWidth = 512
-  const worldHeight = 512
+  const worldWidth = mapState.width
+  const worldHeight = mapState.height
 
   return (
     <div style={{ cursor, width: '100%', height: '100%', overflow: 'hidden' }} ref={containerRef}>
@@ -61,6 +68,7 @@ export function PixiCanvas({ uiState, mapState, setFillTextures, pushUndo }: Pix
           width={stageSize.width}
           height={stageSize.height}
           options={{ antialias: true, resolution: 2 }}
+          onMount={setApp}
         >
           {/** Background strata */}
           <PixiViewport
