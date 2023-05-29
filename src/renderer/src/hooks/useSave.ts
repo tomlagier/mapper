@@ -92,7 +92,7 @@ async function serializeMapState(extract: IExtract, mapState: MapState): Promise
   return serialized
 }
 
-async function deserializeMapState(fileContents: string, app: Application): MapState {
+async function deserializeMapState(fileContents: string, app: Application): Promise<MapState> {
   const rawState = JSON.parse(fileContents)
   const { width, height } = rawState
   const inflatedFills = rawState.background.fills.reduce((all, fill) => {
@@ -112,14 +112,13 @@ async function deserializeMapState(fileContents: string, app: Application): MapS
       clear: false
     })
 
-    // const filter = new Filter(undefined, fragShader, {
-    //   sample: Texture.from(fill.path),
-    //   scale: width / fill.size,
-    //   dimensions: [width, height]
-    // })
-    // filter.resolution = 2
-    // filter.autoFit = false
-    const filter = null
+    const filter = new Filter(undefined, fragShader, {
+      sample: Texture.from(fill.path),
+      scale: width / fill.size,
+      dimensions: [width, height]
+    })
+    filter.resolution = 2
+    filter.autoFit = false
 
     all[fill.id] = {
       path: fill.path,
@@ -132,8 +131,6 @@ async function deserializeMapState(fileContents: string, app: Application): MapS
   }, {})
 
   rawState.background.fills = inflatedFills
-
-  await new Promise((resolve) => setTimeout(resolve, 1000))
 
   return rawState
 }

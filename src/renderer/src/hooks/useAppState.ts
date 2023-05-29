@@ -19,8 +19,8 @@ export function useAppState() {
       // fills: {}
     },
     objects: null,
-    width: 512,
-    height: 512
+    width: 128,
+    height: 128
   })
 
   const setFillTextures = useCallback(

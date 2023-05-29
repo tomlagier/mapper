@@ -95,15 +95,15 @@ export function TerrainBrush({
         firstTexture = renderTexture
       }
 
-      // const filter = new Filter(undefined, fragShader, {
-      //   sample: Texture.from(fill.path),
-      //   scale: width / fill.size,
-      //   dimensions: [width, height]
-      // })
+      const filter = new Filter(undefined, fragShader, {
+        sample: Texture.from(fill.path),
+        scale: width / fill.size,
+        dimensions: [width, height]
+      })
 
-      // filter.resolution = 2
-      // filter.autoFit = false
-      const filter = null
+      filter.resolution = 2
+      filter.autoFit = false
+
       fillTextures[id] = { filter, texture: renderTexture }
     }
 
