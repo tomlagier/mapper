@@ -13,26 +13,45 @@ x Need to fix event coordinates and texture coordinates to be based on world pos
   x Ghosting of white circles
   - Probably due to order in which the layers are painted. Need to add first, then subtract
     x Lock map bounds so you can't go all the way away
-- Handle out of bounds drag events
-  x Arbitrary size texture inputs
+    x Arbitrary size texture inputs
 
 x Viewport fit whole panel
 
 How to architect save:
 x Menu option for save / load (add back undo/redo as well??)
 
-- Need location & name of file to save ( use main thread dialog https://www.electronjs.org/docs/latest/api/dialog#dialogshowsavedialogbrowserwindow-options-callback )
-- Save function that serializes the app state and sends it over to the main thread to be written
-  - Move into worker possibly
-- Main thread writes file
-- Current file path in main thread state??
-- Keybind for save triggers save handler
+x Need location & name of file to save ( use main thread dialog https://www.electronjs.org/docs/latest/api/dialog#dialogshowsavedialogbrowserwindow-options-callback )
+x Save function that serializes the app state and sends it over to the main thread to be written
+
+- Move into worker possibly
+  x Main thread writes file
+  x Current file path in main thread state??
+  x Keybind for save triggers save handler
 
 Load:
 
-- Menu or keybind triggers load
-- Open file dialog
-- When selected, file is loaded & sent to renderer via IPC
-- Handler restores app state from file
+x Menu or keybind triggers load
+x Open file dialog
+x When selected, file is loaded & sent to renderer via IPC
+x Handler restores app state from file
 
 Set background
+Preferences
+New document dialog
+Tool panel system
+
+- Tools to select
+- Tool options
+- Layers?
+
+- Set background
+- Custom / upload brush textures
+
+Cleanup:
+
+- Fix lazy types
+- Save/load cleanup
+  - Frag shader dedupe
+- Another terrain brush cleanup pass
+  - Handle out of bounds drag events, global drag handler
+    - Resize event handler to full canvas, then map x,y to world space
