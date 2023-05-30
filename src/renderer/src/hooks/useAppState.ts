@@ -16,11 +16,10 @@ export function useAppState() {
   const [mapState, setMapState] = useState<MapState>({
     background: {
       fills: DEFAULT_FILLS
-      // fills: {}
     },
     objects: null,
-    width: 128,
-    height: 128
+    width: 512,
+    height: 512
   })
 
   const setFillTextures = useCallback(
@@ -28,10 +27,10 @@ export function useAppState() {
       setMapState((s) => {
         // Merge our textures with the existing fills
         const fills = { ...s.background.fills }
-        for (const [id, val] of Object.entries(fillMap)) {
+        for (const id of Object.keys(fills)) {
           fills[id] = {
             ...fills[id],
-            ...val
+            ...fillMap[id]
           }
         }
 

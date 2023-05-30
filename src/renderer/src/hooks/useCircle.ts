@@ -1,6 +1,6 @@
 import { useApp } from '@pixi/react'
 import { useEffect, useRef } from 'react'
-import { MSAA_QUALITY, Matrix, RenderTexture, Graphics as PixiGraphics } from 'pixi.js'
+import { MSAA_QUALITY, Matrix, RenderTexture, Graphics as PixiGraphics, TYPES } from 'pixi.js'
 
 // Creates a circle texture that can be reused efficiently as a texture by sprites
 export function useCircle() {

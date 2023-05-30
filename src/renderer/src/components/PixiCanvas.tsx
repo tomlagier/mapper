@@ -67,7 +67,7 @@ export function PixiCanvas({
         <Stage
           width={stageSize.width}
           height={stageSize.height}
-          options={{ antialias: true, resolution: 2, backgroundAlpha: 0 }}
+          options={{ antialias: true, resolution: 2, backgroundColor: 0x333333 }}
           onMount={setApp}
         >
           {/** Background strata */}

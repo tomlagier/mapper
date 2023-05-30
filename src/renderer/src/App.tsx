@@ -8,6 +8,8 @@ import { useUndo } from '@renderer/utils/undo'
 import { useSave } from './hooks/useSave'
 import { Application } from 'pixi.js'
 import { useState } from 'react'
+import { SavePreviews } from './components/SavePreviews'
+import { RENDER_TERRAIN_DEBUG } from './config'
 
 function App(): JSX.Element {
   // State
@@ -37,6 +39,7 @@ function App(): JSX.Element {
         }
         header={<HeaderMenu undo={undo} redo={redo} save={save} saveAs={saveAs} load={load} />}
       >
+        {RENDER_TERRAIN_DEBUG && <SavePreviews fills={mapState.background.fills} />}
         <PixiCanvas
           uiState={uiState}
           mapState={mapState}

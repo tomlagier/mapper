@@ -19,8 +19,8 @@ x Need to fix event coordinates and texture coordinates to be based on world pos
 x Viewport fit whole panel
 
 How to architect save:
+x Menu option for save / load (add back undo/redo as well??)
 
-- Menu option for save / load (add back undo/redo as well??)
 - Need location & name of file to save ( use main thread dialog https://www.electronjs.org/docs/latest/api/dialog#dialogshowsavedialogbrowserwindow-options-callback )
 - Save function that serializes the app state and sends it over to the main thread to be written
   - Move into worker possibly
@@ -34,3 +34,5 @@ Load:
 - Open file dialog
 - When selected, file is loaded & sent to renderer via IPC
 - Handler restores app state from file
+
+Set background

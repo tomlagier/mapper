@@ -1,7 +1,16 @@
 import { MapState, UiState } from '@renderer/types/state'
 import { useEffect, useState } from 'react'
 import { SetMapState, SetUiState } from './useAppState'
-import { Application, Filter, IExtract, MSAA_QUALITY, RenderTexture, Sprite } from 'pixi.js'
+import {
+  Application,
+  BaseTexture,
+  FORMATS,
+  Filter,
+  IExtract,
+  MSAA_QUALITY,
+  RenderTexture,
+  Sprite
+} from 'pixi.js'
 import cloneDeep from 'lodash/cloneDeep'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { getModKey } from '@renderer/utils/modkey'
@@ -70,20 +79,22 @@ export function useSave(
 }
 
 async function serializeMapState(extract: IExtract, mapState: MapState): Promise<string> {
-  const serializedFills = Object.entries(mapState.background.fills).map(([id, fill]) => {
+  const serializedFills = []
+
+  for (const [id, fill] of Object.entries(mapState.background.fills)) {
     let texture
 
     if (fill.texture) {
-      texture = Array.from(extract.pixels(fill.texture))
+      texture = await extract.base64(fill.texture, 'image/webp', 1)
     }
 
-    return {
+    serializedFills.push({
       id,
       path: fill.path,
       size: fill.size,
       texture
-    }
-  })
+    })
+  }
 
   const copy = cloneDeep(mapState)
   copy.background.fills = serializedFills
@@ -100,11 +111,14 @@ async function deserializeMapState(fileContents: string, app: Application): Prom
       width: width,
       height: height,
       multisample: MSAA_QUALITY.HIGH,
-      resolution: window.devicePixelRatio
+      resolution: window.devicePixelRatio,
+      format: FORMATS.RED
     })
 
-    const buff = Float32Array.from(fill.texture.map((i) => i / 256))
-    const texture = Texture.fromBuffer(buff, width, height)
+    const img = new Image(width, height)
+    img.src = fill.texture
+    const base = BaseTexture.from(img)
+    const texture = Texture.from(base)
 
     app.renderer.render(new Sprite(texture), {
       renderTexture,

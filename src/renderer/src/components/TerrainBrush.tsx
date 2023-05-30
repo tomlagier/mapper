@@ -9,7 +9,12 @@ import {
   Graphics,
   BlurFilter,
   Sprite as PixiSprite,
-  Application
+  Application,
+  ALPHA_MODES,
+  MIPMAP_MODES,
+  WRAP_MODES,
+  FORMATS,
+  BLEND_MODES
 } from 'pixi.js'
 import { useCircle } from '@renderer/hooks/useCircle'
 import { UndoCommand } from '@renderer/utils/undo'
@@ -17,6 +22,7 @@ import { FillTexture, MapState } from '@renderer/types/state'
 import { STRATAS } from '@renderer/types/stratas'
 import { Point, getNormalizedMagnitude, interpolate } from '@renderer/utils/interpolate'
 import { Viewport } from 'pixi-viewport'
+import { RENDER_TERRAIN_DEBUG } from '@renderer/config'
 
 interface TerrainBrushProps {
   width: number
@@ -87,13 +93,22 @@ export function TerrainBrush({
         width,
         height,
         multisample: MSAA_QUALITY.HIGH,
-        resolution: window.devicePixelRatio
+        resolution: window.devicePixelRatio,
+        format: FORMATS.RED
       })
 
       // TODO: Pull the first texture & only do the paint if it's a new canvas
+      // There must be a better way to do this but I can't figure it out. Fill the default
+      // texture with white so that we can use it as a mask.
+      // TODO
       if (id === 'grass') {
-        firstTexture = renderTexture
+        const g = new Graphics().beginFill(0xffffff).drawRect(0, 0, width, height).endFill()
+        app.renderer.render(g, { renderTexture, blit: true })
       }
+      // else {
+      // const g = new Graphics().beginFill(0x000000).drawRect(0, 0, width, height).endFill()
+      // app.renderer.render(g, { renderTexture, blit: true })
+      // }
 
       const filter = new Filter(undefined, fragShader, {
         sample: Texture.from(fill.path),
@@ -107,11 +122,6 @@ export function TerrainBrush({
       fillTextures[id] = { filter, texture: renderTexture }
     }
 
-    // There must be a better way to do this but I can't figure it out. Fill the default
-    // texture with white so that we can use it as a mask.
-    const g = new Graphics().beginFill(0xffffff).drawRect(0, 0, width, height).endFill()
-    app.renderer.render(g, { renderTexture: firstTexture, blit: true })
-
     setFillTextures(fillTextures)
   }, [app])
 
@@ -123,13 +133,24 @@ export function TerrainBrush({
     // with black so we're adding the paint to the correct layer and subtracting it from the
     // rest, allowing us to be layer order agnostic.
     for (const [id, fill] of Object.entries(mapState.background.fills)) {
+      // console.log(`Render start ${id}`)
       const isActive = id === activeFill
+
       const container = isActive ? containerRef.current : inverseContainerRef.current
       app.renderer.render(container!, {
         renderTexture: fill.texture,
         blit: true,
         clear: false
       })
+
+      if (RENDER_TERRAIN_DEBUG) {
+        app.renderer.extract.base64(fill.texture, 'image/webp', 1).then((canvas) =>
+          setFillTextures({
+            [id]: { canvas }
+          })
+        )
+      }
+      // console.log(`Render end ${id}`)
     }
 
     setCircles(() => [])
@@ -238,6 +259,8 @@ export function TerrainBrush({
         pointermove={(e) => {
           // 1 = left click
           if (e.buttons !== 1) return
+
+          // console.log('Add circles')
 
           // This is our start point that we interpolate from, towards the current mouse position
           const originalX = lastCircleSpot?.x || e.global.x
@@ -395,13 +418,10 @@ void main(void)
 {
   vec4 sourcePixel = texture2D(uSampler, vTextureCoord);
 
-  // Ignore full transparent pixels
-  if(sourcePixel.a == 0.0) discard;
-
   vec2 sampleCoords = fract(vTextureCoord * scale);
   vec4 samplePixel = texture2D(sample, sampleCoords);
 
-  vec4 result = vec4(samplePixel.rgb * sourcePixel.r * sourcePixel.a, sourcePixel.r * sourcePixel.a);
+  vec4 result = samplePixel.rgba * sourcePixel.r;
 
   gl_FragColor = result;
 }
