@@ -15,13 +15,15 @@ declare global {
       saveAs: (file: string) => void
 
       onSaveLocationSet: (cb: (e: Event, path: string) => void) => void
-      clearSaveLocationSet: VoidFunction
       onSaveComplete: (cb: VoidFunction) => void
-      clearSaveComplete: VoidFunction
 
       load: VoidFunction
       onLoad: (cb: (e: Event, file: string) => void) => void
-      clearLoad: VoidFunction
+
+      newDoc: VoidFunction
+      onNewDoc: (cb: (e: Event, path: string) => void) => void
+
+      clearSaveHandlers: VoidFunction
     }
   }
 }

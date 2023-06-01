@@ -6,9 +6,10 @@ interface HeaderMenuProps {
   save: VoidFunction
   saveAs: VoidFunction
   load: VoidFunction
+  newDoc: VoidFunction
 }
 
-export function HeaderMenu({ undo, redo, save, saveAs, load }: HeaderMenuProps) {
+export function HeaderMenu({ undo, redo, save, saveAs, load, newDoc }: HeaderMenuProps) {
   return (
     <Header height={40} p="0">
       <Menu shadow="md" width={200} position="bottom-start">
@@ -18,6 +19,7 @@ export function HeaderMenu({ undo, redo, save, saveAs, load }: HeaderMenuProps) 
 
         <Menu.Dropdown>
           <Menu.Item>Settings</Menu.Item>
+          <Menu.Item onClick={() => newDoc()}>New</Menu.Item>
           <Menu.Item onClick={() => save()}>Save</Menu.Item>
           <Menu.Item onClick={() => saveAs()}>Save as...</Menu.Item>
           <Menu.Item onClick={() => load()}>Open</Menu.Item>

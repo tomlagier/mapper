@@ -56,4 +56,9 @@ export function bindSaveEvents(window: BrowserWindow) {
     const fileContents = await readFile(fileToLoad, 'utf8')
     window.webContents.send('loaded', fileContents)
   })
+
+  ipcMain.on('newDoc', async () => {
+    const path = await openSaveDialog(window)
+    window.webContents.send('newDocCreated', path)
+  })
 }

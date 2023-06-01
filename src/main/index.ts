@@ -6,9 +6,8 @@ import { bindSaveEvents } from './save'
 
 function createWindow(): BrowserWindow {
   // Create the browser window.
+  Menu.setApplicationMenu(null)
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -24,7 +23,7 @@ function createWindow(): BrowserWindow {
   // mainWindow.setMenu(menu)
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+    mainWindow.maximize()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {

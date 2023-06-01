@@ -6,11 +6,9 @@ import {
   Filter,
   RenderTexture,
   MSAA_QUALITY,
-  Graphics,
   BlurFilter,
   Sprite as PixiSprite,
-  Application,
-  FORMATS
+  Application
 } from 'pixi.js'
 import { useCircle } from '@renderer/hooks/useCircle'
 import { UndoCommand } from '@renderer/utils/undo'
@@ -19,7 +17,7 @@ import { STRATAS } from '@renderer/types/stratas'
 import { Point, getNormalizedMagnitude, interpolate } from '@renderer/utils/interpolate'
 import { Viewport } from 'pixi-viewport'
 import { RENDER_TERRAIN_DEBUG } from '@renderer/config'
-import { frag } from '@renderer/utils/terrainShader'
+import { SetFillTextures } from '@renderer/hooks/useAppState'
 
 interface TerrainBrushProps {
   width: number
@@ -34,7 +32,7 @@ interface TerrainBrushProps {
   mapState: MapState
 
   activeFill: string
-  setFillTextures: (textures: Record<string, Partial<FillTexture>>) => void
+  setFillTextures: SetFillTextures
 
   viewport: Viewport
 }
@@ -77,49 +75,6 @@ export function TerrainBrush({
     const prev = renderUndoTextures({ width, height, app, fills: mapState.background.fills })
     _setPrevTex(() => prev)
   }
-
-  // Initialize the renderTextures and filters used for each loaded fill.
-  // TODO: Only do this on map save
-  useEffect(() => {
-    if (!app) return
-
-    const fillTextures: Record<string, Partial<FillTexture>> = {}
-    for (const [id, fill] of Object.entries(mapState.background.fills)) {
-      const renderTexture = RenderTexture.create({
-        width,
-        height,
-        multisample: MSAA_QUALITY.HIGH,
-        resolution: window.devicePixelRatio,
-        format: FORMATS.RED
-      })
-
-      // TODO: Pull the first texture & only do the paint if it's a new canvas
-      // There must be a better way to do this but I can't figure it out. Fill the default
-      // texture with white so that we can use it as a mask.
-      // TODO
-      if (id === 'grass') {
-        const g = new Graphics().beginFill(0xffffff).drawRect(0, 0, width, height).endFill()
-        app.renderer.render(g, { renderTexture, blit: true })
-      }
-      // else {
-      // const g = new Graphics().beginFill(0x000000).drawRect(0, 0, width, height).endFill()
-      // app.renderer.render(g, { renderTexture, blit: true })
-      // }
-
-      const filter = new Filter(undefined, frag, {
-        sample: Texture.from(fill.path),
-        scale: width / fill.size,
-        dimensions: [width, height]
-      })
-
-      filter.resolution = 2
-      filter.autoFit = false
-
-      fillTextures[id] = { filter, texture: renderTexture }
-    }
-
-    setFillTextures(fillTextures)
-  }, [app])
 
   // Update our render texture with the batch of circles drawn since the last save.
   const saveTexture = async () => {
@@ -180,6 +135,7 @@ export function TerrainBrush({
     })
     setFillTextures(nextTextures)
   }
+
   return (
     <>
       {/**

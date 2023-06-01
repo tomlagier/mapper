@@ -17,8 +17,15 @@ function App(): JSX.Element {
   // Pixi app
   const [app, setApp] = useState<Application>()
 
-  const { push, undo, redo } = useUndo()
-  const { save, saveAs, load } = useSave(setUiState, setMapState, mapState, uiState, app)
+  const { push, undo, redo, clear } = useUndo()
+  const { save, saveAs, load, newDoc } = useSave({
+    setUiState,
+    setMapState,
+    mapState,
+    uiState,
+    app,
+    clearUndoStack: clear
+  })
 
   return (
     <MantineProvider>
@@ -37,7 +44,16 @@ function App(): JSX.Element {
             ))}
           </Navbar>
         }
-        header={<HeaderMenu undo={undo} redo={redo} save={save} saveAs={saveAs} load={load} />}
+        header={
+          <HeaderMenu
+            undo={undo}
+            redo={redo}
+            save={save}
+            saveAs={saveAs}
+            load={load}
+            newDoc={newDoc}
+          />
+        }
       >
         {RENDER_TERRAIN_DEBUG && <SavePreviews fills={mapState.background.fills} />}
         <PixiCanvas

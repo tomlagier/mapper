@@ -32,6 +32,11 @@ export function useUndo() {
     setRedoStack((s) => [])
   }
 
+  function clear() {
+    setUndoStack([])
+    setRedoStack([])
+  }
+
   // Wire up undo stack state to IPC functions via menu
   // TODO: Move keybind handling to a single place
   useHotkeys(`${getModKey()}+z`, () => undo(), [undoStack, redoStack])
@@ -40,6 +45,7 @@ export function useUndo() {
   return {
     undo,
     redo,
-    push
+    push,
+    clear
   }
 }

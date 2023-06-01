@@ -33,4 +33,5 @@ export interface UiState {
   activeTool: TOOL
   activeFill: string
   filePath?: string | null
+  loaded: boolean
 }

@@ -13,13 +13,18 @@ const api = {
   save: (file, path) => ipcRenderer.send('save', file, path),
   saveAs: (file) => ipcRenderer.send('saveAs', file),
   onSaveLocationSet: (cb) => ipcRenderer.on('saveLocationSet', cb),
-  clearSaveLocationSet: () => ipcRenderer.removeAllListeners('saveLocationSet'),
   onSaveComplete: (cb) => ipcRenderer.on('saveComplete', cb),
-  clearSaveComplete: () => ipcRenderer.removeAllListeners('saveComplete'),
-
   load: () => ipcRenderer.send('load'),
   onLoad: (cb) => ipcRenderer.on('loaded', cb),
-  clearLoad: () => ipcRenderer.removeAllListeners('loaded'),
+  newDoc: () => ipcRenderer.send('newDoc'),
+  onNewDoc: (cb) => ipcRenderer.on('newDocCreated', cb),
+
+  clearSaveHandlers: () => {
+    ipcRenderer.removeAllListeners('saveLocationSet')
+    ipcRenderer.removeAllListeners('saveComplete')
+    ipcRenderer.removeAllListeners('loaded')
+    ipcRenderer.removeAllListeners('newDocCreated')
+  },
 
   // Static vars
   platform: process.platform
