@@ -17,7 +17,7 @@ export function useAppState() {
     background: {
       fills: DEFAULT_FILLS
     },
-    objects: null,
+    // objects: null,
     width: 512,
     height: 512
   })

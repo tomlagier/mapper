@@ -8,7 +8,8 @@ export interface MapState {
     // Array of fill texture paths that maps to the fillMap, for serializing the texture
     fills: Record<string, FillTexture>
   }
-  objects: any
+  // TODO: Support this
+  // objects: any
   width: number
   height: number
 }
@@ -23,6 +24,9 @@ export interface FillTexture {
   filter?: Filter
   // Size of the fill texture
   size: number
+  // Debug only, serialized canvas data for each fill layer.
+  // Needs a small (< 200) canvas to work well
+  canvas?: string
 }
 
 export interface UiState {

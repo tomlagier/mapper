@@ -14,6 +14,7 @@ import {
 import cloneDeep from 'lodash/cloneDeep'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { getModKey } from '@renderer/utils/modkey'
+import { frag } from '@renderer/utils/terrainShader'
 import { Texture } from 'pixi.js'
 
 export function useSave(
@@ -28,7 +29,7 @@ export function useSave(
 
   // Bind handlers to save
   useEffect(() => {
-    window.api.onSaveLocationSet((e, path) => {
+    window.api.onSaveLocationSet((_, path) => {
       setUiState((s) => ({
         ...s,
         filePath: path
@@ -37,9 +38,9 @@ export function useSave(
 
     window.api.onSaveComplete(() => setSaving(false))
     // TODO: Cleaner handling of this
-    window.api.onLoad(async (e, file) => {
+    window.api.onLoad(async (_, file) => {
       const mapState = await deserializeMapState(file, app!)
-      setMapState((s) => mapState)
+      setMapState(() => mapState)
     })
 
     return () => {
@@ -78,8 +79,14 @@ export function useSave(
   return { save, saveAs, load, saving, loading }
 }
 
+interface SerializedFill {
+  id: string
+  path: string
+  size: number
+  texture: string
+}
 async function serializeMapState(extract: IExtract, mapState: MapState): Promise<string> {
-  const serializedFills = []
+  const serializedFills: SerializedFill[] = []
 
   for (const [id, fill] of Object.entries(mapState.background.fills)) {
     let texture
@@ -126,7 +133,7 @@ async function deserializeMapState(fileContents: string, app: Application): Prom
       clear: false
     })
 
-    const filter = new Filter(undefined, fragShader, {
+    const filter = new Filter(undefined, frag, {
       sample: Texture.from(fill.path),
       scale: width / fill.size,
       dimensions: [width, height]
@@ -148,30 +155,3 @@ async function deserializeMapState(fileContents: string, app: Application): Prom
 
   return rawState
 }
-
-// TODO: Dedupe
-const fragShader = `
-precision mediump float;
-
-varying vec2 vTextureCoord;
-varying vec4 vColor;
-
-uniform sampler2D uSampler;
-uniform sampler2D sample;
-uniform float scale;
-
-void main(void)
-{
-  vec4 sourcePixel = texture2D(uSampler, vTextureCoord);
-
-  // Ignore full transparent pixels
-  if(sourcePixel.a == 0.0) discard;
-
-  vec2 sampleCoords = fract(vTextureCoord * scale);
-  vec4 samplePixel = texture2D(sample, sampleCoords);
-
-  vec4 result = vec4(samplePixel.rgb * sourcePixel.r * sourcePixel.a, sourcePixel.r * sourcePixel.a);
-
-  gl_FragColor = result;
-}
-`

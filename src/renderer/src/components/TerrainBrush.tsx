@@ -10,11 +10,7 @@ import {
   BlurFilter,
   Sprite as PixiSprite,
   Application,
-  ALPHA_MODES,
-  MIPMAP_MODES,
-  WRAP_MODES,
-  FORMATS,
-  BLEND_MODES
+  FORMATS
 } from 'pixi.js'
 import { useCircle } from '@renderer/hooks/useCircle'
 import { UndoCommand } from '@renderer/utils/undo'
@@ -23,6 +19,7 @@ import { STRATAS } from '@renderer/types/stratas'
 import { Point, getNormalizedMagnitude, interpolate } from '@renderer/utils/interpolate'
 import { Viewport } from 'pixi-viewport'
 import { RENDER_TERRAIN_DEBUG } from '@renderer/config'
+import { frag } from '@renderer/utils/terrainShader'
 
 interface TerrainBrushProps {
   width: number
@@ -47,7 +44,7 @@ const blurFilter = new BlurFilter()
 export function TerrainBrush({
   width,
   height,
-  setCursor,
+  // setCursor,
   pushUndo,
   mapState,
   activeFill,
@@ -86,7 +83,6 @@ export function TerrainBrush({
   useEffect(() => {
     if (!app) return
 
-    let firstTexture
     const fillTextures: Record<string, Partial<FillTexture>> = {}
     for (const [id, fill] of Object.entries(mapState.background.fills)) {
       const renderTexture = RenderTexture.create({
@@ -110,7 +106,7 @@ export function TerrainBrush({
       // app.renderer.render(g, { renderTexture, blit: true })
       // }
 
-      const filter = new Filter(undefined, fragShader, {
+      const filter = new Filter(undefined, frag, {
         sample: Texture.from(fill.path),
         scale: width / fill.size,
         dimensions: [width, height]
@@ -231,7 +227,7 @@ export function TerrainBrush({
             )
           })}
       </Container>
-      {Object.entries(mapState.background.fills).map(([id, fill], idx) => {
+      {Object.entries(mapState.background.fills).map(([id, fill]) => {
         const filters: Filter[] = []
         if (fill.filter) filters.push(fill.filter)
         return (
@@ -403,26 +399,3 @@ function renderUndoTextures({
 
   return texMap
 }
-
-const fragShader = `
-precision mediump float;
-
-varying vec2 vTextureCoord;
-varying vec4 vColor;
-
-uniform sampler2D uSampler;
-uniform sampler2D sample;
-uniform float scale;
-
-void main(void)
-{
-  vec4 sourcePixel = texture2D(uSampler, vTextureCoord);
-
-  vec2 sampleCoords = fract(vTextureCoord * scale);
-  vec4 samplePixel = texture2D(sample, sampleCoords);
-
-  vec4 result = samplePixel.rgba * sourcePixel.r;
-
-  gl_FragColor = result;
-}
-`

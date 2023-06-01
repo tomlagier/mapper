@@ -9,9 +9,11 @@ export function getSplatterCircles({ splatterAmount, splatterRadius, x, y, size,
   const { x: worldX, y: worldY } = viewport.toWorld(x, y)
 
   // Translate splatterRadius to world scale
-  const worldSplatter = splatterRadius * viewport.scale.x
-
-  let dx, dy, r, s, t
+  let dx,
+    dy,
+    r,
+    // s,
+    t
   const circles: Array<Array<number>> = []
 
   for (let i = splatterAmount; i > 0; i--) {
@@ -21,7 +23,7 @@ export function getSplatterCircles({ splatterAmount, splatterRadius, x, y, size,
     dy = r * Math.sin(t) * splatterRadius
     // TODO: I want the circles to follow a different curve as they get further away from the center
     // It should be big closer and much smaller further away
-    s = 1 - Math.sqrt(dx * dx + dy * dy) / splatterRadius
+    // s = 1 - Math.sqrt(dx * dx + dy * dy) / splatterRadius
 
     circles.push([worldX + dx, worldY + dy, size])
   }
