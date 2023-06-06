@@ -1,6 +1,5 @@
 import { PixiCanvas } from './components/PixiCanvas'
-import { Button, Header, MantineProvider, NavLink, Navbar } from '@mantine/core'
-import { BarberBrush } from '@icon-park/react'
+import { MantineProvider, Divider, Navbar } from '@mantine/core'
 import { useAppState } from './hooks/useAppState'
 import { AppSkeleton } from './components/AppSkeleton'
 import { HeaderMenu } from './components/HeaderMenu'
@@ -10,10 +9,13 @@ import { Application } from 'pixi.js'
 import { useState } from 'react'
 import { SavePreviews } from './components/SavePreviews'
 import { RENDER_TERRAIN_DEBUG } from './config'
+import { ToolSelector } from './components/ToolSelector'
+import { ToolProperties } from './components/ToolProperties'
 
 function App(): JSX.Element {
   // State
-  const { mapState, uiState, setUiState, setMapState, setFillTextures } = useAppState()
+  const { mapState, uiState, setUiState, setMapState, setFillTextures, setActiveTool } =
+    useAppState()
   // Pixi app
   const [app, setApp] = useState<Application>()
 
@@ -32,16 +34,9 @@ function App(): JSX.Element {
       <AppSkeleton
         sidebar={
           <Navbar width={{ base: 300 }} p="md">
-            <NavLink label="Brush" icon={<BarberBrush />} />
-            {Object.keys(mapState.background.fills).map((id) => (
-              <Button
-                color={uiState.activeFill === id ? 'green' : 'blue'}
-                key={id}
-                onClick={() => setUiState({ ...uiState, activeFill: id })}
-              >
-                {id}
-              </Button>
-            ))}
+            <ToolSelector activeTool={uiState.activeTool} setActiveTool={setActiveTool} />
+            <Divider />
+            <ToolProperties uiState={uiState} mapState={mapState} setUiState={setUiState} />
           </Navbar>
         }
         header={

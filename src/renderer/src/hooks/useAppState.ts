@@ -1,12 +1,13 @@
 import { FillTexture, MapState, UiState } from '@renderer/types/state'
 import { DEFAULT_FILLS } from '@renderer/utils/fills'
-import { TOOLS } from '@renderer/utils/tools'
+import { TOOL, TOOLS } from '@renderer/utils/tools'
 import { useCallback, useState } from 'react'
 import { cloneDeep } from 'lodash'
 
 export type SetUiState = (cb: (state: UiState) => UiState) => void
 export type SetMapState = (cb: (state: MapState) => MapState) => void
 export type SetFillTextures = (textures: Record<string, Partial<FillTexture>>) => void
+export type SetActiveTool = (tool: TOOL) => void
 
 const defaultMapState = {
   background: {
@@ -22,7 +23,7 @@ export function getDefaultMapState() {
 
 export function useAppState() {
   const [uiState, setUiState] = useState<UiState>({
-    activeTool: TOOLS.TERRAIN_BRUSH,
+    activeTool: TOOLS.TERRAIN,
     activeFill: Object.keys(DEFAULT_FILLS)[0],
     filePath: null,
     loaded: false
@@ -37,12 +38,20 @@ export function useAppState() {
     [setMapState]
   )
 
+  const setActiveTool = useCallback(
+    (activeTool: TOOL) => {
+      setUiState((s) => ({ ...s, activeTool }))
+    },
+    [setUiState]
+  )
+
   return {
     uiState,
     setUiState,
     mapState,
     setMapState,
-    setFillTextures
+    setFillTextures,
+    setActiveTool
   }
 }
 

@@ -1,5 +1,6 @@
 export const TOOLS = {
-  TERRAIN_BRUSH: 'TERRAIN_BRUSH'
+  TERRAIN: 'TERRAIN',
+  OBJECTS: 'OBJECTS'
 } as const
 
 export type TOOL = (typeof TOOLS)[keyof typeof TOOLS]
