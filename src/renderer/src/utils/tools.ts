@@ -1,6 +1,6 @@
-export const TOOLS = {
+export const Tools = {
   TERRAIN: 'TERRAIN',
   OBJECTS: 'OBJECTS'
 } as const
 
-export type TOOL = (typeof TOOLS)[keyof typeof TOOLS]
+export type Tool = (typeof Tools)[keyof typeof Tools]
