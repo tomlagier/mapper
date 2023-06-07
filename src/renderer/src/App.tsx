@@ -14,8 +14,8 @@ import { ToolProperties } from './components/ToolProperties'
 
 function App(): JSX.Element {
   // State
-  const { mapState, uiState, setUiState, setMapState, setFillTextures, setActiveTool } =
-    useAppState()
+  const { mapState, uiState, setUiState, setMapState, setActiveTool, updateLayers } = useAppState()
+
   // Pixi app
   const [app, setApp] = useState<Application>()
 
@@ -50,11 +50,11 @@ function App(): JSX.Element {
           />
         }
       >
-        {RENDER_TERRAIN_DEBUG && <SavePreviews fills={mapState.background.fills} />}
+        {RENDER_TERRAIN_DEBUG && <SavePreviews layers={mapState.layers} />}
         <PixiCanvas
           uiState={uiState}
           mapState={mapState}
-          setFillTextures={setFillTextures}
+          updateLayers={updateLayers}
           pushUndo={push}
           setApp={setApp}
         />

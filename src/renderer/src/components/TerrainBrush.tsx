@@ -12,12 +12,12 @@ import {
 } from 'pixi.js'
 import { useCircle } from '@renderer/hooks/useCircle'
 import { UndoCommand } from '@renderer/utils/undo'
-import { FillTexture, MapState } from '@renderer/types/state'
+import { Layer, LayerTypes, MapState, TerrainLayer } from '@renderer/types/state'
 import { STRATAS } from '@renderer/types/stratas'
 import { Point, getNormalizedMagnitude, interpolate } from '@renderer/utils/interpolate'
 import { Viewport } from 'pixi-viewport'
 import { RENDER_TERRAIN_DEBUG } from '@renderer/config'
-import { SetFillTextures } from '@renderer/hooks/useAppState'
+import { UpdateLayers } from '@renderer/hooks/useAppState'
 
 interface TerrainBrushProps {
   width: number
@@ -32,9 +32,10 @@ interface TerrainBrushProps {
   mapState: MapState
 
   activeFill: string
-  setFillTextures: SetFillTextures
 
   viewport: Viewport
+
+  updateLayers: UpdateLayers
 }
 
 const blurFilter = new BlurFilter()
@@ -46,7 +47,7 @@ export function TerrainBrush({
   pushUndo,
   mapState,
   activeFill,
-  setFillTextures,
+  updateLayers,
   viewport
 }: TerrainBrushProps) {
   // Eventually these will be controlled by the UI layer
@@ -68,11 +69,11 @@ export function TerrainBrush({
   const circleTexture = useCircle()
 
   const app = useApp()
-  const [prevTex, _setPrevTex] = useState<Record<string, Partial<FillTexture>>>({})
+  const [prevTex, _setPrevTex] = useState<Record<string, Partial<TerrainLayer>>>({})
 
   // Save a simpler texMap of previous textures, u sed for undo state
   const setPrevTex = () => {
-    const prev = renderUndoTextures({ width, height, app, fills: mapState.background.fills })
+    const prev = renderUndoTextures({ width, height, app, layers: mapState.layers })
     _setPrevTex(() => prev)
   }
 
@@ -83,20 +84,22 @@ export function TerrainBrush({
     // We fill the active texture's layer with white circles, and all the other layers
     // with black so we're adding the paint to the correct layer and subtracting it from the
     // rest, allowing us to be layer order agnostic.
-    for (const [id, fill] of Object.entries(mapState.background.fills)) {
+    for (const [id, layer] of Object.entries(mapState.layers)) {
+      if (layer.type !== LayerTypes.TERRAIN) continue
+
       // console.log(`Render start ${id}`)
       const isActive = id === activeFill
 
       const container = isActive ? containerRef.current : inverseContainerRef.current
       app.renderer.render(container!, {
-        renderTexture: fill.texture,
+        renderTexture: layer.texture,
         blit: true,
         clear: false
       })
 
       if (RENDER_TERRAIN_DEBUG) {
-        app.renderer.extract.base64(fill.texture, 'image/webp', 1).then((canvas) =>
-          setFillTextures({
+        app.renderer.extract.base64(layer.texture, 'image/webp', 1).then((canvas) =>
+          updateLayers({
             [id]: { canvas }
           })
         )
@@ -126,14 +129,14 @@ export function TerrainBrush({
   // Callback for undo/redo that clones the undo/redo state and sets it as the current texture state.
   // We clone b/c otherwise we draw on the textures in the undo/redo stack which leads to incorrect
   // behavior when redoing then drawing then undoing & redoing again.
-  const cloneAndSetTextures = (fillTextures: Record<string, Partial<FillTexture>>) => {
+  const cloneAndSetTextures = (layers: Record<string, Partial<TerrainLayer>>) => {
     const nextTextures = renderUndoTextures({
       app,
       width,
       height,
-      fills: fillTextures
+      layers
     })
-    setFillTextures(nextTextures)
+    updateLayers(nextTextures)
   }
 
   return (
@@ -183,9 +186,16 @@ export function TerrainBrush({
             )
           })}
       </Container>
-      {Object.entries(mapState.background.fills).map(([id, fill]) => {
+      {/** TODO: Support layer order */}
+      {Object.entries(mapState.layers).map(([id, layer]) => {
+        if (layer.type !== LayerTypes.TERRAIN) return
+
         const filters: Filter[] = []
-        if (fill.filter) filters.push(fill.filter)
+
+        const brush = mapState.terrainBrushes[layer.brush]
+
+        if (brush.filter) filters.push(brush.filter)
+
         return (
           <Sprite
             key={id}
@@ -193,7 +203,7 @@ export function TerrainBrush({
             y={0}
             width={width}
             height={height}
-            texture={fill.texture || Texture.EMPTY}
+            texture={layer.texture || Texture.EMPTY}
             eventMode="static"
             zIndex={STRATAS.BACKGROUND}
             filters={filters}
@@ -292,7 +302,7 @@ export function TerrainBrush({
             app,
             width,
             height,
-            fills: mapState.background.fills
+            layers: mapState.layers
           })
           pushUndo(new TerrainUndoCommand(prevTex, currTex, cloneAndSetTextures))
         }}
@@ -304,9 +314,9 @@ export function TerrainBrush({
 
 class TerrainUndoCommand implements UndoCommand {
   constructor(
-    private prevTex: Record<string, Partial<FillTexture>>,
-    private currTex: Record<string, Partial<FillTexture>>,
-    private setCurrTex: (tex: Record<string, Partial<FillTexture>>) => void
+    private prevTex: Record<string, Partial<TerrainLayer>>,
+    private currTex: Record<string, Partial<TerrainLayer>>,
+    private setCurrTex: (tex: Record<string, Partial<TerrainLayer>>) => void
   ) {}
 
   undo() {
@@ -325,19 +335,21 @@ class TerrainUndoCommand implements UndoCommand {
 // Given the current fills, creates a map of fill ID to RenderTexture that can be used to undo/redo
 // the current canvas state.
 interface RenderUndoTexturesArgs {
-  fills: Record<string, Partial<FillTexture>>
+  layers: Record<string, Partial<Layer>>
   width: number
   height: number
   app: Application
 }
 function renderUndoTextures({
-  fills,
+  layers,
   width,
   height,
   app
-}: RenderUndoTexturesArgs): Record<string, Partial<FillTexture>> {
+}: RenderUndoTexturesArgs): Record<string, Partial<TerrainLayer>> {
   const texMap = {}
-  for (const [id, { texture }] of Object.entries(fills)) {
+  for (const [id, layer] of Object.entries(layers)) {
+    if (layer.type !== LayerTypes.TERRAIN) continue
+
     const renderTexture = RenderTexture.create({
       width,
       height,
@@ -345,7 +357,7 @@ function renderUndoTextures({
       resolution: window.devicePixelRatio
     })
 
-    app.renderer.render(new PixiSprite(texture), {
+    app.renderer.render(new PixiSprite(layer.texture), {
       renderTexture,
       blit: true
     })

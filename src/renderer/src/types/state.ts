@@ -1,23 +1,29 @@
 import { Tool } from '@renderer/utils/tools'
 import { Filter, RenderTexture } from 'pixi.js'
 
+// Default terrain brushes
+import grass from '@resources/backgroundTextures/grass1.png'
+import stones from '@resources/backgroundTextures/stones.png'
+import red from '@resources/backgroundTextures/red.webp'
+import blue from '@resources/backgroundTextures/blue.webp'
+
 export interface MapState {
-  terrainBrushes: TerrainBrush[]
-  layers: Layer[]
+  terrainBrushes: Record<string, TerrainBrush>
+  layers: Record<string, Layer>
+  layerOrder: string[]
   width: number
   height: number
 }
 
 // A user-provided texture that we use to render a fill.
 export interface TerrainBrush {
+  id: string
   // Path, gets by loaded
   path: string
   // Filter used to display the texture by mapping the bitmap to the till image
   filter?: Filter
   // Size of the fill texture
   size: number
-  // Render texture of canvas area
-  texture?: RenderTexture
 }
 
 export const LayerTypes = {
@@ -29,10 +35,15 @@ export type LayerType = (typeof LayerTypes)[keyof typeof LayerTypes]
 
 export interface ILayer {
   type: LayerType
-  index: number
+  id: string
 }
 
-export type TerrainLayer = ILayer & {
+export interface TerrainLayer extends ILayer {
+  type: 'TERRAIN'
+
+  // ID of the TerrainBrush used to render
+  brush: string
+
   // Render texture of canvas area
   texture?: RenderTexture
   // Debug only, serialized canvas data for each layer.
@@ -40,8 +51,8 @@ export type TerrainLayer = ILayer & {
   canvas?: string
 }
 
-export type ObjectLayer = ILayer & {
-  // objects: Object[]
+export interface ObjectLayer extends ILayer {
+  type: 'OBJECT'
 }
 
 export type Layer = TerrainLayer | ObjectLayer
@@ -51,4 +62,27 @@ export interface UiState {
   activeFill: string
   filePath?: string | null
   loaded: boolean
+}
+
+export const DEFAULT_TERRAIN_BRUSHES: Record<string, TerrainBrush> = {
+  grass: {
+    id: 'grass',
+    path: grass,
+    size: 64
+  },
+  stones: {
+    id: 'stones',
+    path: stones,
+    size: 32
+  },
+  blue: {
+    id: 'blue',
+    path: blue,
+    size: 4
+  },
+  red: {
+    id: 'red',
+    path: red,
+    size: 4
+  }
 }

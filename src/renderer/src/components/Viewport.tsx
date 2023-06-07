@@ -2,7 +2,7 @@
 
 import { PixiComponent, useApp } from '@pixi/react'
 import { Viewport } from 'pixi-viewport'
-import { Ref, forwardRef } from 'react'
+import { forwardRef, ReactNode } from 'react'
 
 // we share the ticker and interaction from app
 const PixiViewportComponent = PixiComponent('Viewport', {
@@ -88,14 +88,21 @@ const PixiViewportComponent = PixiComponent('Viewport', {
         viewport[p] = newProps[p]
       }
     })
-  },
-  didMount() {}
+  }
+  // didMount() {}
 })
 
 // create a component that can be consumed
 // that automatically pass down the app
-export const PixiViewport = forwardRef((props, ref) => (
-  <PixiViewportComponent ref={ref} app={useApp()} {...props} />
-))
+export const PixiViewport = forwardRef<
+  Viewport,
+  {
+    children?: ReactNode
+    screenWidth: number
+    screenHeight: number
+    worldWidth: number
+    worldHeight: number
+  }
+>((props, ref) => <PixiViewportComponent ref={ref} app={useApp()} {...props} />)
 
 PixiViewport.displayName = 'PixiViewport'

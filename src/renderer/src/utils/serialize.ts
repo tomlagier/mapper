@@ -1,4 +1,4 @@
-import { FillTexture, MapState } from '@renderer/types/state'
+import { Layer, LayerType, LayerTypes, MapState, TerrainBrush } from '@renderer/types/state'
 import {
   Application,
   BaseTexture,
@@ -13,33 +13,68 @@ import cloneDeep from 'lodash/cloneDeep'
 import { frag } from '@renderer/utils/terrainShader'
 import { Texture, Graphics } from 'pixi.js'
 
-// TODO: Update to layers
-interface SerializedFill {
+interface SerializedTerrainLayer {
+  id: string
+  brush: string
+  texture: string
+  type: 'TERRAIN'
+}
+
+interface SerializedObjectLayer {
+  id: string
+  type: 'OBJECT'
+  // TODO: Support object layers
+  // objects: any
+}
+
+type SerializedLayer = SerializedTerrainLayer | SerializedObjectLayer
+
+interface SerializedBrush {
+  // TODO: Need a good way of carrying around packs of brushes
   id: string
   path: string
   size: number
-  texture: string
 }
+
+interface SerializedMapState {
+  terrainBrushes: SerializedBrush[]
+  layers: SerializedLayer[]
+  layerOrder: string[]
+  width: number
+  height: number
+}
+
 export async function serializeMapState(extract: IExtract, mapState: MapState): Promise<string> {
-  const serializedFills: SerializedFill[] = []
+  const serializedLayers: SerializedLayer[] = []
 
-  for (const [id, fill] of Object.entries(mapState.background.fills)) {
-    let texture
-
-    if (fill.texture) {
-      texture = await extract.base64(fill.texture, 'image/webp', 1)
+  for (const [id, layer] of Object.entries(mapState.layers)) {
+    let serializedLayer
+    if (layer.type === LayerTypes.TERRAIN) {
+      const texture = await extract.base64(layer.texture, 'image/webp', 1)
+      serializedLayer = {
+        id,
+        texture,
+        brush: layer.brush,
+        type: layer.type
+      }
     }
 
-    serializedFills.push({
+    serializedLayers.push(serializedLayer)
+  }
+
+  const serializedBrushes: SerializedBrush[] = []
+
+  for (const [id, brush] of Object.entries(mapState.terrainBrushes)) {
+    serializedBrushes.push({
       id,
-      path: fill.path,
-      size: fill.size,
-      texture
+      path: brush.path,
+      size: brush.size
     })
   }
 
   const copy = cloneDeep(mapState)
-  copy.background.fills = serializedFills
+  copy.layers = serializedLayers
+  copy.terrainBrushes = serializedBrushes
   const serialized = JSON.stringify(copy)
 
   // TODO: See if we need fancier memory constructs
@@ -50,10 +85,23 @@ export async function deserializeMapState(
   fileContents: string,
   app: Application
 ): Promise<MapState> {
-  const rawState = JSON.parse(fileContents)
+  const rawState = JSON.parse(fileContents) as SerializedMapState
   const { width, height } = rawState
-  const inflatedFills = {}
-  for (const fill of rawState.background.fills) {
+  const restoredTerrainBrushes: Record<string, TerrainBrush> = {}
+  for (const brush of rawState.terrainBrushes) {
+    restoredTerrainBrushes[brush.id] = {
+      id: brush.id,
+      path: brush.path,
+      size: brush.size,
+      filter: createFilter({ brush, width, height })
+    }
+  }
+
+  const restoredLayers: Record<string, Layer> = {}
+  for (const layer of rawState.layers) {
+    // TODO: Support object layers
+    if (layer.type !== LayerTypes.TERRAIN) continue
+
     const renderTexture = RenderTexture.create({
       width: width,
       height: height,
@@ -63,7 +111,7 @@ export async function deserializeMapState(
     })
 
     const img = new Image(width, height)
-    img.src = fill.texture
+    img.src = layer.texture || ''
     const base = BaseTexture.from(img)
     const texture = Texture.from(base)
 
@@ -82,80 +130,109 @@ export async function deserializeMapState(
       clear: false
     })
 
-    const filter = new Filter(undefined, frag, {
-      sample: Texture.from(fill.path),
-      scale: width / fill.size,
-      dimensions: [width, height]
-    })
-    filter.resolution = 2
-    filter.autoFit = false
-
-    inflatedFills[fill.id] = {
-      path: fill.path,
-      size: fill.size,
-      filter,
+    restoredLayers[layer.id] = {
+      brush: layer.brush,
+      id: layer.id,
+      type: layer.type,
       texture: renderTexture
     }
   }
 
-  rawState.background.fills = inflatedFills
+  const mapState = {
+    terrainBrushes: restoredTerrainBrushes,
+    layers: restoredLayers,
+    layerOrder: rawState.layerOrder,
+    width,
+    height
+  }
 
-  return rawState
+  return mapState
 }
 
-// Initialize the renderTextures and filters used for each loaded fill.
-interface CreateFillsArgs {
+// Initialize the terrain brushes with filters
+interface CreateTerrainBrushesArgs {
   mapState: MapState
-  backgroundId?: string
-  // Only needed for default texture generation
-  app?: Application
-  filters?: boolean
-  textures?: boolean
 }
-export function createFills({
-  mapState,
-  backgroundId,
-  app,
-  textures = true,
-  filters = true
-}: CreateFillsArgs): Record<string, Partial<FillTexture>> {
-  const fills: Record<string, Partial<FillTexture>> = {}
+
+export function createTerrainBrushes({
+  mapState
+}: CreateTerrainBrushesArgs): Record<string, TerrainBrush> {
+  const brushes: Record<string, TerrainBrush> = {}
   const { width, height } = mapState
 
-  for (const [id, fill] of Object.entries(mapState.background.fills)) {
-    fills[id] = {}
-    // Generate textures for fill
-    if (textures) {
-      const renderTexture = RenderTexture.create({
-        width,
-        height,
-        multisample: MSAA_QUALITY.HIGH,
-        resolution: window.devicePixelRatio,
-        format: FORMATS.RED
-      })
-
-      // If fill should default to filled in (i.e. is background), fill it.
-      if (id === backgroundId && app) {
-        const g = new Graphics().beginFill(0xffffff).drawRect(0, 0, width, height).endFill()
-        app.renderer.render(g, { renderTexture, blit: true })
-      }
-      fills[id].texture = renderTexture
-    }
-
-    // Generate filters for fills
-    if (filters) {
-      const filter = new Filter(undefined, frag, {
-        sample: Texture.from(fill.path),
-        scale: width / fill.size,
-        dimensions: [width, height]
-      })
-
-      filter.resolution = 2
-      filter.autoFit = false
-
-      fills[id].filter = filter
+  for (const [id, brush] of Object.entries(mapState.terrainBrushes)) {
+    brushes[id] = {
+      filter: createFilter({ brush, width, height }),
+      id,
+      path: brush.path,
+      size: brush.size
     }
   }
 
-  return fills
+  return brushes
+}
+
+interface CreateFilterArgs {
+  brush: TerrainBrush
+  width: number
+  height: number
+}
+
+function createFilter({ brush, width, height }: CreateFilterArgs): Filter {
+  const filter = new Filter(undefined, frag, {
+    sample: Texture.from(brush.path),
+    scale: width / brush.size,
+    dimensions: [width, height]
+  })
+
+  filter.resolution = 2
+  filter.autoFit = false
+
+  return filter
+}
+
+// Initialize the renderTextures and filters used for each loaded layer.
+interface CreateLayersArgs {
+  mapState: MapState
+  // For default texture generation
+  app: Application
+  // ID of the layer to set as background
+  backgroundId: string
+}
+export async function createLayers({
+  mapState,
+  app,
+  backgroundId
+}: CreateLayersArgs): Promise<Record<string, Layer>> {
+  const layers: Record<string, Layer> = {}
+  const { width, height } = mapState
+
+  // TODO: Only create background layer once we can add layers
+  for (const [id, brush] of Object.entries(mapState.terrainBrushes)) {
+    // TODO: Support object layers
+
+    const renderTexture = RenderTexture.create({
+      width,
+      height,
+      multisample: MSAA_QUALITY.HIGH,
+      resolution: window.devicePixelRatio,
+      format: FORMATS.RED
+    })
+
+    // If fill should default to filled in (i.e. is background), fill it.
+    if (id === backgroundId && app) {
+      const g = new Graphics().beginFill(0xffffff).drawRect(0, 0, width, height).endFill()
+      app.renderer.render(g, { renderTexture, blit: true })
+    }
+
+    layers[id] = {
+      type: LayerTypes.TERRAIN,
+      // TODO: Think about layer ID generation better
+      id: Math.floor(Math.random() * 1000000).toString(),
+      brush: brush.id,
+      texture: renderTexture
+    }
+  }
+
+  return layers
 }

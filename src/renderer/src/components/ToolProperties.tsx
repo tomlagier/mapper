@@ -1,5 +1,5 @@
 import { MapState, UiState } from '@renderer/types/state'
-import { TOOLS } from '@renderer/utils/tools'
+import { Tools } from '@renderer/utils/tools'
 import { Button, Box } from '@mantine/core'
 import { SetUiState } from '@renderer/hooks/useAppState'
 
@@ -17,10 +17,10 @@ export function ToolProperties({ uiState, mapState, setUiState }: ToolProperties
   )
 }
 
-function getActiveToolProperties({ uiState, mapState, setUiState }) {
+function getActiveToolProperties({ uiState, mapState, setUiState }: ToolPropertiesProps) {
   switch (uiState.activeTool) {
-    case TOOLS.TERRAIN: {
-      return Object.keys(mapState.background.fills).map((id) => (
+    case Tools.TERRAIN: {
+      return Object.keys(mapState.terrainBrushes).map((id) => (
         <Button
           variant={uiState.activeFill === id ? 'filled' : 'subtle'}
           key={id}
@@ -30,7 +30,7 @@ function getActiveToolProperties({ uiState, mapState, setUiState }) {
         </Button>
       ))
     }
-    case TOOLS.OBJECTS:
+    case Tools.OBJECTS:
     default:
       return null
   }

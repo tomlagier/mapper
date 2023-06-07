@@ -1,16 +1,15 @@
-import { FillTexture, MapState, UiState } from '@renderer/types/state'
+import { MapState, UiState } from '@renderer/types/state'
 import { useEffect, useState } from 'react'
-import {
-  SetFillTextures,
-  SetMapState,
-  SetUiState,
-  getDefaultMapState,
-  mergeFills
-} from './useAppState'
+import { SetMapState, SetUiState, getDefaultMapState } from './useAppState'
 import { Application } from 'pixi.js'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { getModKey } from '@renderer/utils/modkey'
-import { createFills, deserializeMapState, serializeMapState } from '@renderer/utils/serialize'
+import {
+  createLayers,
+  createTerrainBrushes,
+  deserializeMapState,
+  serializeMapState
+} from '@renderer/utils/serialize'
 
 interface UseSaveArgs {
   setUiState: SetUiState
@@ -20,7 +19,14 @@ interface UseSaveArgs {
   app?: Application
   clearUndoStack: VoidFunction
 }
-export function useSave({ setUiState, setMapState, mapState, uiState, app, clearUndoStack }) {
+export function useSave({
+  setUiState,
+  setMapState,
+  mapState,
+  uiState,
+  app,
+  clearUndoStack
+}: UseSaveArgs) {
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -115,12 +121,13 @@ async function loadMap(file, app): Promise<MapState> {
 }
 
 async function createNewMapState(app): Promise<MapState> {
-  const defaultMapState = getDefaultMapState()
-  const fills = createFills({
-    app,
-    mapState: defaultMapState,
-    backgroundId: 'grass'
-  })
-  const newMapStateWithFills = mergeFills(defaultMapState, fills)
-  return newMapStateWithFills
+  const newMapState = getDefaultMapState()
+  const brushes = createTerrainBrushes({ mapState: newMapState })
+  const layers = await createLayers({ mapState: newMapState, app, backgroundId: 'grass' })
+
+  newMapState.terrainBrushes = brushes
+  newMapState.layers = layers
+  newMapState.layerOrder = Object.values(layers).map((layer) => layer.id)
+
+  return newMapState
 }

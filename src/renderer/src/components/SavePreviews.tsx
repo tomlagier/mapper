@@ -1,11 +1,20 @@
+import { Layer } from '@renderer/types/state'
 import { useEffect, useState } from 'react'
 
-export function SavePreviews({ fills }) {
+interface SavePreviewsProps {
+  layers: Record<string, Layer>
+}
+
+export function SavePreviews({ layers }: SavePreviewsProps) {
   return (
     <div style={{ position: 'absolute', top: 0, right: 0 }}>
-      {Object.entries(fills).map(([id, fill]) => (
-        <img key={id} src={fill.canvas} />
-      ))}
+      {Object.entries(layers).map(([id, layer]) => {
+        if ('canvas' in layer) {
+          return <img key={id} src={layer.canvas} />
+        }
+
+        return null
+      })}
     </div>
   )
 }

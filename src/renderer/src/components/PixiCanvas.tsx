@@ -1,13 +1,13 @@
-import { Sprite, Stage } from '@pixi/react'
-import { TOOLS, TOOL } from '../utils/tools'
+import { Stage } from '@pixi/react'
+import { Tools } from '../utils/tools'
 import { TerrainBrush } from './TerrainBrush'
 import { useEffect, useRef, useState } from 'react'
-import { FillTexture, MapState, UiState } from '@renderer/types/state'
-import { Application, Texture } from 'pixi.js'
-import { STRATAS } from '@renderer/types/stratas'
+import { MapState, UiState } from '@renderer/types/state'
+import { Application } from 'pixi.js'
 import { PixiViewport } from './Viewport'
 import { Viewport } from 'pixi-viewport'
 import { UndoCommand } from '@renderer/utils/undo'
+import { UpdateLayers } from '@renderer/hooks/useAppState'
 
 // Basic algorithm for brush:
 // - Maintain mapping of color to texture
@@ -19,22 +19,16 @@ import { UndoCommand } from '@renderer/utils/undo'
 interface PixiCanvasProps {
   uiState: UiState
   mapState: MapState
-  setFillTextures: (fillTextures: Record<string, Partial<FillTexture>>) => void
+  updateLayers: UpdateLayers
   pushUndo: (undo: UndoCommand) => void
   setApp: (app: Application) => void
 }
 
-export function PixiCanvas({
-  uiState,
-  mapState,
-  setFillTextures,
-  pushUndo,
-  setApp
-}: PixiCanvasProps) {
+export function PixiCanvas({ uiState, mapState, updateLayers, pushUndo, setApp }: PixiCanvasProps) {
   const [cursor, setCursor] = useState('default')
 
   // Get the viewport instance
-  const viewportRef = useRef<Viewport>()
+  const viewportRef = useRef<Viewport>(null)
 
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -85,15 +79,15 @@ export function PixiCanvas({
             eventMode="static"
             pointerdown={(e) => console.log(e)}
           /> */}
-            {uiState.activeTool === TOOLS.TERRAIN_BRUSH && (
+            {uiState.activeTool === Tools.TERRAIN && (
               <TerrainBrush
                 width={worldWidth}
                 height={worldWidth}
                 setCursor={setCursor}
                 pushUndo={pushUndo}
                 mapState={mapState}
-                setFillTextures={setFillTextures}
                 activeFill={uiState.activeFill}
+                updateLayers={updateLayers}
                 viewport={viewportRef.current!}
               />
             )}
