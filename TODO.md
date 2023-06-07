@@ -35,23 +35,33 @@ x Open file dialog
 x When selected, file is loaded & sent to renderer via IPC
 x Handler restores app state from file
 
-Set background
-Preferences
-New document dialog
-Tool panel system
-
-- Tools to select
-- Tool options
-- Layers?
-
-- Set background
-- Custom / upload brush textures
-
 Cleanup:
 
-- Fix lazy types
-- Save/load cleanup
-  - Frag shader dedupe
-- Another terrain brush cleanup pass
-  - Handle out of bounds drag events, global drag handler
-    - Resize event handler to full canvas, then map x,y to world space
+x Fix lazy types
+x Save/load cleanup
+x Frag shader dedupe
+x Another terrain brush cleanup pass
+x Handle out of bounds drag events, global drag handler
+x Resize event handler to full canvas, then map x,y to world space - Too much work for now, address when becomes an issue. - Might need to split draw/render into separate state, have draw operate above viewport & render operate below - Re-evaluate w/object placement
+
+x Tools to select
+
+x Tool options
+
+x Layers?
+Rework fills yet again:
+x Probably rename to terrain brushes
+x Set of loaded terrain brushes
+x Set of layers
+x Layer has type object or terrain
+x If terrain, has associated brush & uses brush filter to render
+x If object, TBD
+
+- PixiCanvas iterates over layers, renders appropriately (Object or Terrain)
+- TerrainBrush is just the layer that sits over the other layers & draws
+  - Gotta figure out how to hide circles somewhere..
+- Create new layer: Object or terrain
+- Set active layer
+
+- Set background brush
+- Custom / upload brush textures

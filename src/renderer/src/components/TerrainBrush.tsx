@@ -1,19 +1,16 @@
-import { Container, Sprite, useApp } from '@pixi/react'
-import { useEffect, useRef, useState } from 'react'
+import { Sprite, _ReactPixi, useApp } from '@pixi/react'
+import { useEffect, useState, RefObject } from 'react'
 import { getSplatterCircles } from '@renderer/utils/circles'
 import {
   Texture,
-  Filter,
   RenderTexture,
   MSAA_QUALITY,
-  BlurFilter,
   Sprite as PixiSprite,
-  Application
+  Application,
+  Container
 } from 'pixi.js'
-import { useCircle } from '@renderer/hooks/useCircle'
 import { UndoCommand } from '@renderer/utils/undo'
 import { Layer, LayerTypes, MapState, TerrainLayer } from '@renderer/types/state'
-import { STRATAS } from '@renderer/types/stratas'
 import { Point, getNormalizedMagnitude, interpolate } from '@renderer/utils/interpolate'
 import { Viewport } from 'pixi-viewport'
 import { RENDER_TERRAIN_DEBUG } from '@renderer/config'
@@ -24,21 +21,17 @@ interface TerrainBrushProps {
   height: number
   // Eventually we'll use this to control the cursor size
   setCursor: (cursor: string) => void
-
   // Push command onto the undo stack
   pushUndo: (command: UndoCommand) => void
-
   // Map state
   mapState: MapState
-
   activeFill: string
-
   viewport: Viewport
-
   updateLayers: UpdateLayers
+  hiddenSprites: number[][]
+  setHiddenSprites: (cb: (c: number[][]) => number[][]) => void
+  hiddenSpriteContainer: RefObject<Container>
 }
-
-const blurFilter = new BlurFilter()
 
 export function TerrainBrush({
   width,
@@ -48,25 +41,15 @@ export function TerrainBrush({
   mapState,
   activeFill,
   updateLayers,
-  viewport
+  viewport,
+  hiddenSprites,
+  setHiddenSprites,
+  hiddenSpriteContainer
 }: TerrainBrushProps) {
   // Eventually these will be controlled by the UI layer
   const size = 1
   const splatterRadius = 100
   const splatterAmount = 15
-
-  // Array of circles that are going to be added to the canvas..
-  const [circles, setCircles] = useState<Array<Array<number>>>([])
-
-  // Our render texture isn't created until the component is mounted, so we don't render our unsaved
-  // circles until then.
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  // Texture to render a single circle
-  const circleTexture = useCircle()
 
   const app = useApp()
   const [prevTex, _setPrevTex] = useState<Record<string, Partial<TerrainLayer>>>({})
@@ -79,47 +62,41 @@ export function TerrainBrush({
 
   // Update our render texture with the batch of circles drawn since the last save.
   const saveTexture = async () => {
-    if (circles.length === 0) return
+    if (hiddenSprites.length === 0) return
 
-    // We fill the active texture's layer with white circles, and all the other layers
-    // with black so we're adding the paint to the correct layer and subtracting it from the
-    // rest, allowing us to be layer order agnostic.
-    for (const [id, layer] of Object.entries(mapState.layers)) {
-      if (layer.type !== LayerTypes.TERRAIN) continue
+    // We fill the active texture's layer with white circles, which our filter maps to the correct texture
+    // TODO: Store active layer rather than active fill
+    const layer = Object.values(mapState.layers).find(
+      (l) => l.type === LayerTypes.TERRAIN && l.brush === activeFill
+    )
 
-      // console.log(`Render start ${id}`)
-      const isActive = id === activeFill
+    if (!layer || layer.type !== LayerTypes.TERRAIN) return
 
-      const container = isActive ? containerRef.current : inverseContainerRef.current
-      app.renderer.render(container!, {
-        renderTexture: layer.texture,
-        blit: true,
-        clear: false
-      })
+    const container = hiddenSpriteContainer?.current
+    app.renderer.render(container!, {
+      renderTexture: layer.texture,
+      blit: true,
+      clear: false
+    })
 
-      if (RENDER_TERRAIN_DEBUG) {
-        app.renderer.extract.base64(layer.texture, 'image/webp', 1).then((canvas) =>
-          updateLayers({
-            [id]: { canvas }
-          })
-        )
-      }
-      // console.log(`Render end ${id}`)
+    if (RENDER_TERRAIN_DEBUG) {
+      app.renderer.extract.base64(layer.texture, 'image/webp', 1).then((canvas) =>
+        updateLayers({
+          [layer.id]: { canvas }
+        })
+      )
     }
+    // console.log(`Render end ${id}`)
 
-    setCircles(() => [])
+    setHiddenSprites(() => [])
   }
 
   // Save circles to texture when added
   // const limit = 25
   useEffect(() => {
-    if (circles.length === 0) return
+    if (hiddenSprites.length === 0) return
     saveTexture()
-  }, [circles.length])
-
-  // Refs for the container we use to render out the circles
-  const containerRef = useRef(null)
-  const inverseContainerRef = useRef(null)
+  }, [hiddenSprites.length])
 
   // Because the sample pointermove sample rate is kinda low, we use interpolation to render
   // circles between ticks of pointermove. This tracks that state.
@@ -141,75 +118,6 @@ export function TerrainBrush({
 
   return (
     <>
-      {/**
-       * Container that contains our inverse circles, i.e. the black circles we paint
-       * on all non-active texture layers */}
-      <Container
-        ref={inverseContainerRef}
-        // TODO: Allow parameterization of the blur
-        // Because this is getting applied to the circles, it will get "baked in" to the render
-        // texture & can't be dynamically updated for past painted things. If we want to sharpen
-        // existing edges, we need to play with the alpha cutoffs that we render stuff at.
-        filters={[blurFilter]}
-      >
-        {mounted &&
-          circles.map(([x, y, size], i) => {
-            return (
-              <Sprite
-                x={x}
-                y={y}
-                scale={size}
-                key={i}
-                tint="black"
-                alpha={0.3}
-                texture={circleTexture}
-                zIndex={-9999}
-              />
-            )
-          })}
-      </Container>
-      {/** Container that contains the circles to paint on the active layer */}
-      <Container ref={containerRef} filters={[blurFilter]}>
-        {mounted &&
-          circles.map(([x, y, size], i) => {
-            return (
-              <Sprite
-                x={x}
-                y={y}
-                scale={size}
-                key={i}
-                tint="white"
-                alpha={0.3}
-                texture={circleTexture}
-                zIndex={-9999}
-              />
-            )
-          })}
-      </Container>
-      {/** TODO: Support layer order */}
-      {Object.entries(mapState.layers).map(([id, layer]) => {
-        if (layer.type !== LayerTypes.TERRAIN) return
-
-        const filters: Filter[] = []
-
-        const brush = mapState.terrainBrushes[layer.brush]
-
-        if (brush.filter) filters.push(brush.filter)
-
-        return (
-          <Sprite
-            key={id}
-            x={0}
-            y={0}
-            width={width}
-            height={height}
-            texture={layer.texture || Texture.EMPTY}
-            eventMode="static"
-            zIndex={STRATAS.BACKGROUND}
-            filters={filters}
-          />
-        )
-      })}
       {/** This container tracks the pointer events used to paint and stop painting. */}
       <Sprite
         eventMode="static"
@@ -269,7 +177,7 @@ export function TerrainBrush({
           }
 
           if (_c.length) {
-            setCircles([...circles, ..._c])
+            setHiddenSprites((c) => [...c, ..._c])
           }
 
           if (lastDrawn.x !== originalX || lastDrawn.y !== originalY) {
@@ -292,7 +200,7 @@ export function TerrainBrush({
             viewport
           })
 
-          setCircles((c) => [...c, ...newCircles])
+          setHiddenSprites((c) => [...c, ...newCircles])
         }}
         pointerup={async () => {
           // Complete our interpolation, save any outstanding circles to textures, then push

@@ -10,7 +10,14 @@ export function SavePreviews({ layers }: SavePreviewsProps) {
     <div style={{ position: 'absolute', top: 0, right: 0 }}>
       {Object.entries(layers).map(([id, layer]) => {
         if ('canvas' in layer) {
-          return <img key={id} src={layer.canvas} />
+          return (
+            <img
+              key={id}
+              id={id}
+              data-layer={JSON.stringify({ brush: layer.brush })}
+              src={layer.canvas}
+            />
+          )
         }
 
         return null

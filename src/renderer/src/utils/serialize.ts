@@ -225,10 +225,11 @@ export async function createLayers({
       app.renderer.render(g, { renderTexture, blit: true })
     }
 
-    layers[id] = {
+    const _id = id === backgroundId ? '0' : Math.floor(Math.random() * 1000000).toString()
+    layers[_id] = {
       type: LayerTypes.TERRAIN,
       // TODO: Think about layer ID generation better
-      id: Math.floor(Math.random() * 1000000).toString(),
+      id: _id,
       brush: brush.id,
       texture: renderTexture
     }

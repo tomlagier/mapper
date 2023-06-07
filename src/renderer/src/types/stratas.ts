@@ -1,4 +1,4 @@
-export const STRATAS = {
+export const Stratas = {
   BACKGROUND: -2,
   TOOLS: -1,
   OBJECTS: 0,
