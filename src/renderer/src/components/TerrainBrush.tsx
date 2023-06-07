@@ -1,4 +1,4 @@
-import { Sprite, _ReactPixi, useApp } from '@pixi/react'
+import { Sprite, useApp } from '@pixi/react'
 import { useEffect, useState, RefObject } from 'react'
 import { getSplatterCircles } from '@renderer/utils/circles'
 import {

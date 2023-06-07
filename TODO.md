@@ -57,11 +57,11 @@ x Layer has type object or terrain
 x If terrain, has associated brush & uses brush filter to render
 x If object, TBD
 
-- PixiCanvas iterates over layers, renders appropriately (Object or Terrain)
-- TerrainBrush is just the layer that sits over the other layers & draws
-  - Gotta figure out how to hide circles somewhere..
+x PixiCanvas iterates over layers, renders appropriately (Object or Terrain)
+x TerrainBrush is just the layer that sits over the other layers & draws
+x Gotta figure out how to hide circles somewhere..
+
 - Create new layer: Object or terrain
 - Set active layer
-
 - Set background brush
 - Custom / upload brush textures

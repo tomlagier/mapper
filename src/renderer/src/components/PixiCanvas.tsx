@@ -137,10 +137,6 @@ export function PixiCanvas({ uiState, mapState, updateLayers, pushUndo, setApp }
               />
             )}
 
-            {/** Object strata */}
-
-            {/** Tool strata */}
-
             {/** UI strata */}
           </PixiViewport>
         </Stage>
