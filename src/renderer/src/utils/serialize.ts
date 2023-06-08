@@ -18,11 +18,13 @@ interface SerializedTerrainLayer {
   brush: string
   texture: string
   type: 'TERRAIN'
+  name: string
 }
 
 interface SerializedObjectLayer {
   id: string
   type: 'OBJECT'
+  name: string
   // TODO: Support object layers
   // objects: any
 }
@@ -34,6 +36,7 @@ interface SerializedBrush {
   id: string
   path: string
   size: number
+  name: string
 }
 
 interface SerializedMapState {
@@ -68,7 +71,8 @@ export async function serializeMapState(extract: IExtract, mapState: MapState): 
     serializedBrushes.push({
       id,
       path: brush.path,
-      size: brush.size
+      size: brush.size,
+      name: brush.name
     })
   }
 
@@ -93,7 +97,8 @@ export async function deserializeMapState(
       id: brush.id,
       path: brush.path,
       size: brush.size,
-      filter: createFilter({ brush, width, height })
+      filter: createFilter({ brush, width, height }),
+      name: brush.name
     }
   }
 
@@ -134,7 +139,8 @@ export async function deserializeMapState(
       brush: layer.brush,
       id: layer.id,
       type: layer.type,
-      texture: renderTexture
+      texture: renderTexture,
+      name: layer.name
     }
   }
 
@@ -165,7 +171,8 @@ export function createTerrainBrushes({
       filter: createFilter({ brush, width, height }),
       id,
       path: brush.path,
-      size: brush.size
+      size: brush.size,
+      name: brush.name
     }
   }
 
@@ -231,7 +238,9 @@ export async function createLayers({
       // TODO: Think about layer ID generation better
       id: _id,
       brush: brush.id,
-      texture: renderTexture
+      texture: renderTexture,
+      // TODO: Only generate background layer & name it "Background"
+      name: _id
     }
   }
 

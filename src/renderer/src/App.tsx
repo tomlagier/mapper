@@ -11,6 +11,7 @@ import { SavePreviews } from './components/SavePreviews'
 import { RENDER_TERRAIN_DEBUG } from './config'
 import { ToolSelector } from './components/ToolSelector'
 import { ToolProperties } from './components/ToolProperties'
+import { LayersPanel } from './components/LayersPanel'
 
 function App(): JSX.Element {
   // State
@@ -50,6 +51,7 @@ function App(): JSX.Element {
           />
         }
       >
+        <LayersPanel layers={mapState.layers} layerOrder={mapState.layerOrder} />
         {RENDER_TERRAIN_DEBUG && <SavePreviews layers={mapState.layers} />}
         <PixiCanvas
           uiState={uiState}

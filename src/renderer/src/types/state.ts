@@ -24,6 +24,7 @@ export interface TerrainBrush {
   filter?: Filter
   // Size of the fill texture
   size: number
+  name: string
 }
 
 export const LayerTypes = {
@@ -36,6 +37,7 @@ export type LayerType = (typeof LayerTypes)[keyof typeof LayerTypes]
 export interface ILayer {
   type: LayerType
   id: string
+  name: string
 }
 
 export interface TerrainLayer extends ILayer {
@@ -68,21 +70,25 @@ export const DEFAULT_TERRAIN_BRUSHES: Record<string, TerrainBrush> = {
   grass: {
     id: 'grass',
     path: grass,
-    size: 64
+    size: 64,
+    name: 'Grass'
   },
   stones: {
     id: 'stones',
     path: stones,
-    size: 32
+    size: 32,
+    name: 'Stones'
   },
   blue: {
     id: 'blue',
     path: blue,
-    size: 4
+    size: 4,
+    name: 'Blue'
   },
   red: {
     id: 'red',
     path: red,
-    size: 4
+    size: 4,
+    name: 'Red'
   }
 }
