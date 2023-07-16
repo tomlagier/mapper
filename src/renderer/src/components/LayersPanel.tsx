@@ -13,6 +13,7 @@ import { useState } from 'react'
 import { useForm } from '@mantine/form'
 import { FORMATS, MSAA_QUALITY, RenderTexture } from 'pixi.js'
 
+// TODO: Need to be able to undo & redo adding a new layer?
 interface LayersPanelProps {
   width: number
   height: number

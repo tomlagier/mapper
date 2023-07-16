@@ -35,6 +35,7 @@ function getActiveToolProperties({
 
       if (activeLayer.type !== LayerTypes.TERRAIN) return
 
+      // TODO: Undo/redo. Possibly push undo/redo to updateLayers?
       return Object.keys(mapState.terrainBrushes).map((id) => (
         <Button
           variant={id === activeLayer.brush ? 'filled' : 'subtle'}

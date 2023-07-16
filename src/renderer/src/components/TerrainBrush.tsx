@@ -55,7 +55,7 @@ export function TerrainBrush({
   const app = useApp()
   const [prevTex, _setPrevTex] = useState<Record<string, Partial<TerrainLayer>>>({})
 
-  // Save a simpler texMap of previous textures, u sed for undo state
+  // Save a simpler texMap of previous textures, used for undo state
   const setPrevTex = () => {
     const prev = renderUndoTextures({ width, height, app, layers: mapState.layers })
     _setPrevTex(() => prev)
@@ -266,7 +266,7 @@ function renderUndoTextures({
       blit: true
     })
 
-    texMap[id] = { texture: renderTexture }
+    texMap[id] = { texture: renderTexture, type: LayerTypes.TERRAIN }
   }
 
   return texMap
