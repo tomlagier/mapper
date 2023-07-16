@@ -65,7 +65,8 @@ export async function serializeMapState(extract: IExtract, mapState: MapState): 
         id,
         texture,
         brush: layer.brush,
-        type: layer.type
+        type: layer.type,
+        name: layer.name
       }
     }
 
