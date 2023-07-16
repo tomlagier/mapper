@@ -15,6 +15,7 @@ import { Point, getNormalizedMagnitude, interpolate } from '@renderer/utils/inte
 import { Viewport } from 'pixi-viewport'
 import { RENDER_TERRAIN_DEBUG } from '@renderer/config'
 import { UpdateLayers } from '@renderer/hooks/useAppState'
+import { clampUseMovePosition } from '@mantine/hooks'
 
 interface TerrainBrushProps {
   width: number
@@ -25,7 +26,7 @@ interface TerrainBrushProps {
   pushUndo: (command: UndoCommand) => void
   // Map state
   mapState: MapState
-  activeFill: string
+  activeLayer: string
   viewport: Viewport
   updateLayers: UpdateLayers
   hiddenSprites: number[][]
@@ -39,7 +40,7 @@ export function TerrainBrush({
   // setCursor,
   pushUndo,
   mapState,
-  activeFill,
+  activeLayer,
   updateLayers,
   viewport,
   hiddenSprites,
@@ -65,10 +66,7 @@ export function TerrainBrush({
     if (hiddenSprites.length === 0) return
 
     // We fill the active texture's layer with white circles, which our filter maps to the correct texture
-    // TODO: Store active layer rather than active fill
-    const layer = Object.values(mapState.layers).find(
-      (l) => l.type === LayerTypes.TERRAIN && l.brush === activeFill
-    )
+    const layer = Object.values(mapState.layers).find((l) => l.id === activeLayer)
 
     if (!layer || layer.type !== LayerTypes.TERRAIN) return
 
@@ -129,8 +127,6 @@ export function TerrainBrush({
         pointermove={(e) => {
           // 1 = left click
           if (e.buttons !== 1) return
-
-          // console.log('Add circles')
 
           // This is our start point that we interpolate from, towards the current mouse position
           const originalX = lastCircleSpot?.x || e.global.x

@@ -45,7 +45,7 @@ export function useSave({
       const mapState = await loadMap(file, app!)
       clearUndoStack()
       setMapState(() => mapState)
-      setUiState((s) => ({ ...s, loaded: true }))
+      setUiState((s) => ({ ...s, activeLayer: mapState.layerOrder[0], loaded: true }))
     })
 
     window.api.onNewDoc(async (_, path) => {
@@ -58,6 +58,7 @@ export function useSave({
       setMapState((s) => newMapState)
       setUiState((s) => ({
         ...s,
+        activeLayer: newMapState.layerOrder[0],
         filePath: path,
         loaded: true
       }))
@@ -72,6 +73,8 @@ export function useSave({
 
   // Return save functions
   async function save(overrideMapState?: MapState, overridePath?: string) {
+    if (!uiState.loaded) return
+
     const _mapState = overrideMapState || mapState
     const _path = overridePath || uiState.filePath
 
@@ -84,6 +87,8 @@ export function useSave({
   }
 
   async function saveAs(overrideMapState?: MapState) {
+    if (!uiState.loaded) return
+
     const _mapState = overrideMapState || mapState
 
     setSaving(true)

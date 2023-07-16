@@ -1,5 +1,5 @@
 import { PixiCanvas } from './components/PixiCanvas'
-import { MantineProvider, Divider, Navbar } from '@mantine/core'
+import { MantineProvider, Divider, Navbar, Box } from '@mantine/core'
 import { useAppState } from './hooks/useAppState'
 import { AppSkeleton } from './components/AppSkeleton'
 import { HeaderMenu } from './components/HeaderMenu'
@@ -35,9 +35,18 @@ function App(): JSX.Element {
       <AppSkeleton
         sidebar={
           <Navbar width={{ base: 300 }} p="md">
-            <ToolSelector activeTool={uiState.activeTool} setActiveTool={setActiveTool} />
+            {uiState.loaded && (
+              <ToolSelector activeTool={uiState.activeTool} setActiveTool={setActiveTool} />
+            )}
             <Divider />
-            <ToolProperties uiState={uiState} mapState={mapState} setUiState={setUiState} />
+            {uiState.loaded && (
+              <ToolProperties
+                uiState={uiState}
+                mapState={mapState}
+                setUiState={setUiState}
+                updateLayers={updateLayers}
+              />
+            )}
           </Navbar>
         }
         header={
@@ -51,7 +60,20 @@ function App(): JSX.Element {
           />
         }
       >
-        <LayersPanel layers={mapState.layers} layerOrder={mapState.layerOrder} />
+        {uiState.loaded && (
+          <LayersPanel
+            width={mapState.width}
+            height={mapState.height}
+            layers={mapState.layers}
+            layerOrder={mapState.layerOrder}
+            terrainBrushes={mapState.terrainBrushes}
+            activeLayer={uiState.activeLayer}
+            addNewLayer={(layer) => {
+              updateLayers({ [layer.id]: layer }, [...mapState.layerOrder, layer.id])
+            }}
+            setActiveLayer={(id) => setUiState((s) => ({ ...s, activeLayer: id }))}
+          />
+        )}
         {RENDER_TERRAIN_DEBUG && <SavePreviews layers={mapState.layers} />}
         <PixiCanvas
           uiState={uiState}
@@ -60,6 +82,11 @@ function App(): JSX.Element {
           pushUndo={push}
           setApp={setApp}
         />
+        {!uiState.loaded && (
+          <Box sx={{ position: 'absolute', top: '50%', left: '50%' }}>
+            Open existing or create new map
+          </Box>
+        )}
       </AppSkeleton>
     </MantineProvider>
   )

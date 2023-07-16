@@ -1,30 +1,45 @@
-import { MapState, UiState } from '@renderer/types/state'
+import { LayerTypes, MapState, UiState } from '@renderer/types/state'
 import { Tools } from '@renderer/utils/tools'
 import { Button, Box } from '@mantine/core'
-import { SetUiState } from '@renderer/hooks/useAppState'
+import { SetUiState, UpdateLayers } from '@renderer/hooks/useAppState'
 
 interface ToolPropertiesProps {
   uiState: UiState
   mapState: MapState
   setUiState: SetUiState
+  updateLayers: UpdateLayers
 }
 
-export function ToolProperties({ uiState, mapState, setUiState }: ToolPropertiesProps) {
+export function ToolProperties({
+  uiState,
+  mapState,
+  setUiState,
+  updateLayers
+}: ToolPropertiesProps) {
   return (
     <Box mt={8} w="100%">
-      {getActiveToolProperties({ uiState, mapState, setUiState })}
+      {getActiveToolProperties({ uiState, mapState, setUiState, updateLayers })}
     </Box>
   )
 }
 
-function getActiveToolProperties({ uiState, mapState, setUiState }: ToolPropertiesProps) {
+function getActiveToolProperties({
+  uiState,
+  mapState,
+  setUiState,
+  updateLayers
+}: ToolPropertiesProps) {
   switch (uiState.activeTool) {
     case Tools.TERRAIN: {
+      const activeLayer = mapState.layers[uiState.activeLayer]
+
+      if (activeLayer.type !== LayerTypes.TERRAIN) return
+
       return Object.keys(mapState.terrainBrushes).map((id) => (
         <Button
-          variant={uiState.activeFill === id ? 'filled' : 'subtle'}
+          variant={id === activeLayer.brush ? 'filled' : 'subtle'}
           key={id}
-          onClick={() => setUiState((s) => ({ ...s, activeFill: id }))}
+          onClick={() => updateLayers({ [uiState.activeLayer]: { brush: id } })}
         >
           {id}
         </Button>

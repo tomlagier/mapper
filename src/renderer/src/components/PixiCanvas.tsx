@@ -103,6 +103,7 @@ export function PixiCanvas({ uiState, mapState, updateLayers, pushUndo, setApp }
 
               const filters: Filter[] = []
               const brush = mapState.terrainBrushes[layer.brush]
+
               if (brush.filter) filters.push(brush.filter)
 
               return (
@@ -112,9 +113,9 @@ export function PixiCanvas({ uiState, mapState, updateLayers, pushUndo, setApp }
                   y={0}
                   width={worldWidth}
                   height={worldHeight}
-                  texture={layer.texture || Texture.EMPTY}
+                  texture={layer.texture || Texture.WHITE}
                   eventMode="static"
-                  zIndex={Stratas.BACKGROUND}
+                  zIndex={Stratas.BACKGROUND + index}
                   filters={filters}
                 />
               )
@@ -128,7 +129,7 @@ export function PixiCanvas({ uiState, mapState, updateLayers, pushUndo, setApp }
                 setCursor={setCursor}
                 pushUndo={pushUndo}
                 mapState={mapState}
-                activeFill={uiState.activeFill}
+                activeLayer={uiState.activeLayer}
                 updateLayers={updateLayers}
                 viewport={viewportRef.current!}
                 hiddenSprites={hiddenSprites}

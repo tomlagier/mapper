@@ -61,7 +61,7 @@ export type Layer = TerrainLayer | ObjectLayer
 
 export interface UiState {
   activeTool: Tool
-  activeFill: string
+  activeLayer: string
   filePath?: string | null
   loaded: boolean
 }
@@ -92,3 +92,6 @@ export const DEFAULT_TERRAIN_BRUSHES: Record<string, TerrainBrush> = {
     name: 'Red'
   }
 }
+
+export const DEFAULT_LAYER_ID = 'background'
+export const DEFAULT_LAYER_ORDER = [DEFAULT_LAYER_ID]

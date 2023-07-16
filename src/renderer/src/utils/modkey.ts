@@ -3,7 +3,7 @@ export function getModKey() {
     case 'win32':
       return 'ctrl'
     case 'darwin':
-      return 'cmd'
+      return 'meta'
     default:
       return 'ctrl'
   }

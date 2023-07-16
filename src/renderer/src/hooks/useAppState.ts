@@ -1,4 +1,5 @@
 import {
+  DEFAULT_LAYER_ID,
   DEFAULT_TERRAIN_BRUSHES,
   Layer,
   MapState,
@@ -33,7 +34,7 @@ export function getDefaultMapState(): MapState {
 export function useAppState() {
   const [uiState, setUiState] = useState<UiState>({
     activeTool: Tools.TERRAIN,
-    activeFill: Object.values(DEFAULT_TERRAIN_BRUSHES)[0].id,
+    activeLayer: DEFAULT_LAYER_ID,
     filePath: null,
     loaded: false
   })
@@ -79,13 +80,14 @@ export function useAppState() {
 
   // Update layers by ID
   const updateLayers = useCallback(
-    (layers: Record<string, Partial<Layer>>) => {
+    (layers: Record<string, Partial<Layer>>, layerOrder?: string[]) => {
       setMapState((s) => {
         const mergedLayers = mergeMapsById(s.layers, layers)
 
         return {
           ...s,
-          layers: mergedLayers
+          layers: mergedLayers,
+          layerOrder: layerOrder || s.layerOrder
         }
       })
     },
@@ -137,6 +139,12 @@ export function mergeMapsById<T>(
     copy[id] = {
       ...existingObjects[id],
       ...newObjects[id]
+    }
+  }
+
+  for (const id of Object.keys(newObjects)) {
+    if (!copy[id]) {
+      copy[id] = newObjects[id] as T
     }
   }
 

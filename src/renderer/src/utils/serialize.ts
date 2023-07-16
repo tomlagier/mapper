@@ -1,4 +1,11 @@
-import { Layer, LayerType, LayerTypes, MapState, TerrainBrush } from '@renderer/types/state'
+import {
+  DEFAULT_LAYER_ID,
+  Layer,
+  LayerType,
+  LayerTypes,
+  MapState,
+  TerrainBrush
+} from '@renderer/types/state'
 import {
   Application,
   BaseTexture,
@@ -214,34 +221,27 @@ export async function createLayers({
   const layers: Record<string, Layer> = {}
   const { width, height } = mapState
 
-  // TODO: Only create background layer once we can add layers
-  for (const [id, brush] of Object.entries(mapState.terrainBrushes)) {
-    // TODO: Support object layers
+  const backgroundBrush = mapState.terrainBrushes[backgroundId]
 
-    const renderTexture = RenderTexture.create({
-      width,
-      height,
-      multisample: MSAA_QUALITY.HIGH,
-      resolution: window.devicePixelRatio,
-      format: FORMATS.RED
-    })
+  const renderTexture = RenderTexture.create({
+    width,
+    height,
+    multisample: MSAA_QUALITY.HIGH,
+    resolution: window.devicePixelRatio,
+    format: FORMATS.RED
+  })
 
-    // If fill should default to filled in (i.e. is background), fill it.
-    if (id === backgroundId && app) {
-      const g = new Graphics().beginFill(0xffffff).drawRect(0, 0, width, height).endFill()
-      app.renderer.render(g, { renderTexture, blit: true })
-    }
+  // Fill in the background with the default background brush
+  const g = new Graphics().beginFill(0xffffff).drawRect(0, 0, width, height).endFill()
+  app.renderer.render(g, { renderTexture, blit: true })
 
-    const _id = id === backgroundId ? '0' : Math.floor(Math.random() * 1000000).toString()
-    layers[_id] = {
-      type: LayerTypes.TERRAIN,
-      // TODO: Think about layer ID generation better
-      id: _id,
-      brush: brush.id,
-      texture: renderTexture,
-      // TODO: Only generate background layer & name it "Background"
-      name: _id
-    }
+  const _id = DEFAULT_LAYER_ID
+  layers[_id] = {
+    type: LayerTypes.TERRAIN,
+    id: _id,
+    brush: backgroundBrush.id,
+    texture: renderTexture,
+    name: 'Background'
   }
 
   return layers
