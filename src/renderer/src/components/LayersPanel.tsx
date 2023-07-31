@@ -55,8 +55,9 @@ export function LayersPanel({
     setAddLayerModalVisible(false)
   }
 
-  const onSubmit = () => {
-    const { brush, type, name } = form.getTransformedValues()
+  const onSubmit = form.onSubmit((values) => {
+    const { brush, type, name } = values
+
     const layer: Layer = {
       id: Math.floor(Math.random() * 1000000).toString(),
       name,
@@ -73,7 +74,7 @@ export function LayersPanel({
     addNewLayer(layer)
     setActiveLayer(layer.id)
     setAddLayerModalVisible(false)
-  }
+  })
 
   return (
     <>

@@ -2,10 +2,10 @@ import { Tool } from '@renderer/utils/tools'
 import { Filter, RenderTexture } from 'pixi.js'
 
 // Default terrain brushes
-import grass from '@resources/backgroundTextures/grass1.png'
-import stones from '@resources/backgroundTextures/stones.png'
-import red from '@resources/backgroundTextures/red.webp'
-import blue from '@resources/backgroundTextures/blue.webp'
+import grass from '@renderer/assets/default/textures/grass1.png'
+import stones from '@renderer/assets/default/textures/stones.png'
+import red from '@renderer/assets/default/textures/red.webp'
+import blue from '@renderer/assets/default/textures/blue.webp'
 
 export interface MapState {
   terrainBrushes: Record<string, TerrainBrush>

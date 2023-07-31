@@ -1,11 +1,4 @@
-import {
-  DEFAULT_LAYER_ID,
-  Layer,
-  LayerType,
-  LayerTypes,
-  MapState,
-  TerrainBrush
-} from '@renderer/types/state'
+import { DEFAULT_LAYER_ID, Layer, LayerTypes, MapState, TerrainBrush } from '@renderer/types/state'
 import {
   Application,
   BaseTexture,
