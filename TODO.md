@@ -4,16 +4,16 @@ x Create/save/load a file
 x Brush tool to draw on canvas
 x Save results of brush tool to file (how to save it? could be path/points or could just be raster image)
 
-  x Best: as path/points, though harder
-  x Allows for swapping out textures from different brushes (very nice DD feature)
+x Best: as path/points, though harder
+x Allows for swapping out textures from different brushes (very nice DD feature)
 
 x Need to fix event coordinates and texture coordinates to be based on world position instead of screen position
 
 x pointerup not checking whether we were previously dragging
-  x Ghosting of white circles
-  x Probably due to order in which the layers are painted. Need to add first, then subtract
-    x Lock map bounds so you can't go all the way away
-    x Arbitrary size texture inputs
+x Ghosting of white circles
+x Probably due to order in which the layers are painted. Need to add first, then subtract
+x Lock map bounds so you can't go all the way away
+x Arbitrary size texture inputs
 
 x Viewport fit whole panel
 
@@ -24,9 +24,9 @@ x Need location & name of file to save ( use main thread dialog https://www.elec
 x Save function that serializes the app state and sends it over to the main thread to be written
 
 x Move into worker possibly
-  x Main thread writes file
-  x Current file path in main thread state??
-  x Keybind for save triggers save handler
+x Main thread writes file
+x Current file path in main thread state??
+x Keybind for save triggers save handler
 
 Load:
 
@@ -63,19 +63,21 @@ x Gotta figure out how to hide circles somewhere..
 
 x Create new layer: Object or terrain
 x Set active layer
+
 - Set background brush
 - Custom / upload brush textures
 - Fix ghosting againSQL
 
 Uploading brush textures:
+
 - Need to have metadata in save file for brush textures
 - Do we bundle the textures with the file? Or do we just have a list of textures that need to be loaded?
   - Advantage of bundling is that it's easier to share the file
   - Disadvantage is that it's a bigger file
   - For now, let's not bundle it, we'll just store the texture names/paths in the file
 
-
 Strategy for custom assets:
+
 - Designate a filesystem folder & structure for custom assets
   - Types of custom assets:
     - Textures
@@ -125,6 +127,7 @@ Strategy for custom assets:
 - Save to `app.getPath('userData')`
 
 Custom assets directory:
+
 - metadata.json
 - textures/
 - paths/
@@ -132,12 +135,14 @@ Custom assets directory:
 - packs/
 
 Individual asset:
+
 - textures (avif, webp, png, jpg, gif, svg)
 - OR directory with ordered textures that we use for an animated sprite
 
 Replicate directory structure in each asset pack
 
 Tools:
+
 - Texture
 - Object
 - Pattern
@@ -146,18 +151,22 @@ Tools:
 - Light? Effect?
 
 Export:
+
 - Foundry
 - JPG
 
 Need better system for loading than baking assets into the binary
 
 Flow:
+
 - On load:
+
   - Allow user to select custom assets directory if DNE
     - Save to user data
   - Load manifest of available assets
 
 - On new project
+
   - Select background
   - Select asset packs to load
   - Load metadata of selected assets into state & write to save file
@@ -173,6 +182,7 @@ Flow:
     - Should we load on use or upfront? Leaning towards on use - Pixi already does this? Also detects dimensions?
 
 Roadmap:
+
 - User data integration
 - Default & custom asset pack support
   - New document
@@ -216,4 +226,7 @@ Roadmap:
   - Can use SimpleRope for this too maybe
   - BitmapText -> RenderTexture -> SimpleRope?
 
-Pixi can do image cursor maybe? Scaling might be tough
+Random:
+
+- Pixi can do image cursor maybe? Scaling might be tough
+- Instead of base64 image data, save each layer as actual image file in zip archive. Make it easy to export & manually manipulate layers!

@@ -1,4 +1,5 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
+import { UserPreferences } from '@renderer/types/state'
 import { Event } from 'electron'
 
 declare global {
@@ -23,7 +24,13 @@ declare global {
       newDoc: VoidFunction
       onNewDoc: (cb: (e: Event, path: string) => void) => void
 
+      loadUserPreferences: VoidFunction
+      saveUserPreferences: (preferences: string) => void
+      onPreferencesLoaded: (cb: (e: Event, preferences: string) => void) => void
+
       clearSaveHandlers: VoidFunction
+
+      selectCustomAssetsDirectory: VoidFunction
     }
   }
 }

@@ -1,6 +1,6 @@
-import { MapState, UiState } from '@renderer/types/state'
+import { EditorPreferences, MapState, UiState, UserPreferences } from '@renderer/types/state'
 import { useEffect, useState } from 'react'
-import { SetMapState, SetUiState, getDefaultMapState } from './useAppState'
+import { SetMapState, SetUiState, SetUserPreferences, getDefaultMapState } from './useAppState'
 import { Application } from 'pixi.js'
 import { useHotkeys } from 'react-hotkeys-hook'
 import { getModKey } from '@renderer/utils/modkey'
@@ -14,6 +14,7 @@ import {
 interface UseSaveArgs {
   setUiState: SetUiState
   setMapState: SetMapState
+  setUserPreferences: SetUserPreferences
   mapState: MapState
   uiState: UiState
   app?: Application
@@ -22,6 +23,7 @@ interface UseSaveArgs {
 export function useSave({
   setUiState,
   setMapState,
+  setUserPreferences,
   mapState,
   uiState,
   app,
@@ -66,6 +68,12 @@ export function useSave({
       await save(newMapState, path)
     })
 
+    // TODO: Make this smarter to support more user preferences
+    window.api.onPreferencesLoaded((_, preferences) => {
+      console.log(preferences)
+      setUserPreferences(() => ({ ...JSON.parse(preferences), loading: false }))
+    })
+
     return () => {
       window.api.clearSaveHandlers()
     }
@@ -97,7 +105,7 @@ export function useSave({
     setSaving(false)
   }
 
-  async function load() {
+  function load() {
     setLoading(true)
     window.api.load()
   }
@@ -112,12 +120,32 @@ export function useSave({
     window.api.newDoc()
   }
 
+  // User preferences management. Frontend state synced with state on disc
+  function loadUserPreferences() {
+    window.api.loadUserPreferences()
+  }
+
+  function saveUserPreferences(preferences: UserPreferences) {
+    window.api.saveUserPreferences(JSON.stringify(preferences))
+    setUserPreferences((s) => ({ ...s, loading: true }))
+  }
+
+  // Hotkeys
   useHotkeys(`${getModKey()}+s`, () => save(), [app, mapState, uiState])
   useHotkeys(`${getModKey()}+shift+s`, () => saveAs(), [app, mapState, uiState])
   useHotkeys(`${getModKey()}+o`, () => load(), [app, mapState, uiState])
   useHotkeys(`${getModKey()}+n`, () => newDoc(), [app, mapState, uiState])
 
-  return { save, saveAs, load, saving, loading, newDoc }
+  return {
+    save,
+    saveAs,
+    load,
+    saving,
+    loading,
+    newDoc,
+    loadUserPreferences,
+    saveUserPreferences
+  }
 }
 
 async function loadMap(file, app): Promise<MapState> {

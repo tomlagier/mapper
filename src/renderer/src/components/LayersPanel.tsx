@@ -93,7 +93,7 @@ export function LayersPanel({
         />
         <Button onClick={onModalOpen}>Add new layer</Button>
       </Dialog>
-      <Modal opened={addLayerModalVisible} onClose={onModalClose}>
+      <Modal opened={addLayerModalVisible} onClose={onModalClose} centered>
         <form onSubmit={onSubmit}>
           <Title>Add new layer</Title>
           <TextInput label="Layer name" {...form.getInputProps('name')} />

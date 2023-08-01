@@ -1,5 +1,4 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron'
-import { existsSync } from 'fs'
 import { writeFile, readFile } from 'node:fs/promises'
 
 export async function openSaveDialog(window: BrowserWindow) {

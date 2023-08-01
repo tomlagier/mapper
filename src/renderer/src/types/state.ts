@@ -64,6 +64,7 @@ export interface UiState {
   activeLayer: string
   filePath?: string | null
   loaded: boolean
+  preferencesModalShowing: boolean
 }
 
 export const DEFAULT_TERRAIN_BRUSHES: Record<string, TerrainBrush> = {
@@ -95,3 +96,9 @@ export const DEFAULT_TERRAIN_BRUSHES: Record<string, TerrainBrush> = {
 
 export const DEFAULT_LAYER_ID = 'background'
 export const DEFAULT_LAYER_ORDER = [DEFAULT_LAYER_ID]
+
+// Saved to the temp directory, not persisted per save file.
+export interface UserPreferences {
+  customAssetsDirectory: string | null
+  configured: boolean
+}

@@ -3,6 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { bindSaveEvents } from './save'
+import { bindUserPreferencesEvents, loadUserPreferences } from './preferences'
 
 function createWindow(): BrowserWindow {
   // Create the browser window.
@@ -45,7 +46,7 @@ function createWindow(): BrowserWindow {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
@@ -73,8 +74,12 @@ app.whenReady().then(() => {
   //   mainWindow.webContents.send('redo')
   // })
 
+  // Create or load configuration file
+  const prefs = await loadUserPreferences(app)
+
   // Bind IPC senders/receivers
   bindSaveEvents(mainWindow)
+  bindUserPreferencesEvents(mainWindow, prefs, app)
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

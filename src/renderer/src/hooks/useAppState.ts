@@ -4,7 +4,8 @@ import {
   Layer,
   MapState,
   TerrainBrush,
-  UiState
+  UiState,
+  UserPreferences
 } from '@renderer/types/state'
 import { Tool, Tools } from '@renderer/utils/tools'
 import { useCallback, useState } from 'react'
@@ -18,6 +19,7 @@ export type SetLayers = (layers: Record<string, Layer>) => void
 export type UpdateLayers = (layers: Record<string, Partial<Layer>>) => void
 export type UpdateLayerOrder = (layerOrder: string[]) => void
 export type SetActiveTool = (tool: Tool) => void
+export type SetUserPreferences = (cb: (state: UserPreferences) => UserPreferences) => void
 
 const defaultMapState: MapState = {
   terrainBrushes: DEFAULT_TERRAIN_BRUSHES,
@@ -36,10 +38,16 @@ export function useAppState() {
     activeTool: Tools.TERRAIN,
     activeLayer: DEFAULT_LAYER_ID,
     filePath: null,
-    loaded: false
+    loaded: false,
+    preferencesModalShowing: false
   })
 
   const [mapState, setMapState] = useState<MapState>(getDefaultMapState())
+
+  const [userPreferences, setUserPreferences] = useState<UserPreferences>({
+    customAssetsDirectory: null,
+    configured: false
+  })
 
   // Reducers
   // Set new terrain brushes
@@ -118,6 +126,8 @@ export function useAppState() {
     setUiState,
     mapState,
     setMapState,
+    userPreferences,
+    setUserPreferences,
     setTerrainBrushes,
     updateTerrainBrushes,
     setLayers,

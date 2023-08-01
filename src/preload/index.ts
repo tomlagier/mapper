@@ -14,8 +14,10 @@ const api = {
   saveAs: (file) => ipcRenderer.send('saveAs', file),
   onSaveLocationSet: (cb) => ipcRenderer.on('saveLocationSet', cb),
   onSaveComplete: (cb) => ipcRenderer.on('saveComplete', cb),
+
   load: () => ipcRenderer.send('load'),
   onLoad: (cb) => ipcRenderer.on('loaded', cb),
+
   newDoc: () => ipcRenderer.send('newDoc'),
   onNewDoc: (cb) => ipcRenderer.on('newDocCreated', cb),
 
@@ -24,7 +26,14 @@ const api = {
     ipcRenderer.removeAllListeners('saveComplete')
     ipcRenderer.removeAllListeners('loaded')
     ipcRenderer.removeAllListeners('newDocCreated')
+    ipcRenderer.removeAllListeners('preferencesLoaded')
   },
+
+  // Preferences
+  selectCustomAssetsDirectory: () => ipcRenderer.send('selectCustomAssetsDir'),
+  loadUserPreferences: () => ipcRenderer.send('loadPreferences'),
+  saveUserPreferences: (preferences) => ipcRenderer.send('savePreferences', preferences),
+  onPreferencesLoaded: (cb) => ipcRenderer.on('preferencesLoaded', cb),
 
   // Static vars
   platform: process.platform

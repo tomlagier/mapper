@@ -12,18 +12,29 @@ import { RENDER_TERRAIN_DEBUG } from './config'
 import { ToolSelector } from './components/ToolSelector'
 import { ToolProperties } from './components/ToolProperties'
 import { LayersPanel } from './components/LayersPanel'
+import { Modals } from './components/modals/Modals'
 
 function App(): JSX.Element {
   // State
-  const { mapState, uiState, setUiState, setMapState, setActiveTool, updateLayers } = useAppState()
+  const {
+    mapState,
+    uiState,
+    userPreferences,
+    setUiState,
+    setMapState,
+    setUserPreferences,
+    setActiveTool,
+    updateLayers
+  } = useAppState()
 
   // Pixi app
   const [app, setApp] = useState<Application>()
 
   const { push, undo, redo, clear } = useUndo()
-  const { save, saveAs, load, newDoc } = useSave({
+  const { save, saveAs, load, newDoc, saveUserPreferences, loadUserPreferences } = useSave({
     setUiState,
     setMapState,
+    setUserPreferences,
     mapState,
     uiState,
     app,
@@ -57,6 +68,7 @@ function App(): JSX.Element {
             saveAs={saveAs}
             load={load}
             newDoc={newDoc}
+            setUiState={setUiState}
           />
         }
       >
@@ -83,10 +95,18 @@ function App(): JSX.Element {
           setApp={setApp}
         />
         {!uiState.loaded && (
+          // TODO: Turn into links
           <Box sx={{ position: 'absolute', top: '50%', left: '50%' }}>
             Open existing or create new map
           </Box>
         )}
+        <Modals
+          uiState={uiState}
+          setUiState={setUiState}
+          userPreferences={userPreferences}
+          setUserPreferences={setUserPreferences}
+          saveUserPreferences={saveUserPreferences}
+        />
       </AppSkeleton>
     </MantineProvider>
   )
